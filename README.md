@@ -9,7 +9,8 @@ full research lifecycle without downloading a model or retaining raw traces.
 The repository has three bounded layers:
 
 - `src/ahcl/` contains the synthetic stream, fixed feature interventions,
-  ridge monitor, fit/tune lock, assessment metrics, and aggregate output.
+  ridge monitor, fit/tune lock, assessment metrics, aggregate output, and
+  vendor-neutral adapter ports. The public backend registry is quarantined.
 - `crates/admission-core/` contains a dependency-free Rust policy kernel. It
   can quarantine a candidate until independent held-out evidence and a locked
   prediction packet exist.

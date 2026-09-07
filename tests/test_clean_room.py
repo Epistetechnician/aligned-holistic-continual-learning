@@ -5,6 +5,7 @@ from pathlib import Path
 
 from ahcl.canonical import digest
 from ahcl.experiment import run_experiment
+from ahcl.interfaces import PUBLIC_BACKENDS, registry_is_quarantined
 from ahcl.monitor import RidgeMonitor, design_row
 from ahcl.synthetic import ARMS, SPLITS, families, observations, update_delta
 from ahcl.validate import ValidationError, validate_result
@@ -27,6 +28,10 @@ class CleanRoomTests(unittest.TestCase):
 
     def test_fixed_design_has_seven_terms(self):
         self.assertEqual(len(design_row((1.0, 2.0, 3.0))), 7)
+
+    def test_public_backend_registry_is_quarantined(self):
+        self.assertEqual(len(PUBLIC_BACKENDS), 5)
+        self.assertTrue(registry_is_quarantined())
 
     def test_ridge_monitor_fits_known_relation(self):
         rows = observations("fit", "fixed_update")

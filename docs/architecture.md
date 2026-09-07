@@ -23,3 +23,10 @@ The research boundary is explicit. A future model-backed slice would need a
 fresh corpus and custody manifest, exact runtime and model identities, an
 independent review receipt, and a new claim ceiling. None of those inputs are
 present in this repository.
+
+The adapter ports in `src/ahcl/interfaces.py` are the intended consolidation
+point. Activation capture, feature encoding, interventions, and behavior
+scoring remain separate capabilities with typed boundaries. Public upstream
+projects are registered for provenance, but every registration is disabled in
+the current slice. This prevents a convenient backend import from silently
+turning a synthetic qualification into model evidence.
