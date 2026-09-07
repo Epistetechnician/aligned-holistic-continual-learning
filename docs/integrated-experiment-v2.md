@@ -102,6 +102,8 @@ Every backend must pass, in order:
 6. held-out causal scrubbing against the locked target.
 
 The shared numerical checks are implemented in `src/ahcl/checks.py`.
+`src/ahcl/qualification.py` composes them into one aggregate qualification
+record, so a backend cannot satisfy one check while bypassing another.
 
 ## Frozen statistics and controls
 
@@ -122,7 +124,9 @@ The machine-readable version of this contract is in the `study` and
 enforces phase order and cohort disjointness without retaining raw rows.
 `src/ahcl/aggregate.py` independently recomputes row-level R², baseline R²,
 sign agreement, and the fixed shuffled control for validator use during the
-72-hour custody window.
+72-hour custody window. Its prediction-bound entry point accepts stored
+predictions directly, so the validator does not need to import the fitted
+monitor or model runtime.
 
 ## Review and execution gates
 

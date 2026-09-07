@@ -18,7 +18,7 @@ from ahcl.adapters import (
     SAELensFeatureAdapter,
     TransformerLensActivationAdapter,
 )
-from ahcl.aggregate import AggregateRow, reproduce_metrics, reproduce_shuffled_r2
+from ahcl.aggregate import AggregateRow, reproduce_metrics, reproduce_metrics_from_predictions, reproduce_shuffled_r2
 from ahcl.checks import (
     CheckError,
     assert_intervention_reach,
@@ -38,6 +38,7 @@ from ahcl.continual import StreamBatch
 from ahcl.lifecycle import LifecycleError, LockedTrial, TrialRow
 from ahcl.monitor import RidgeMonitor, metrics, shuffled_metrics
 from ahcl.preflight import build_review_packet, validate_dependency_lanes, validate_review_packet
+from ahcl.qualification import QualificationThresholds, qualify_path
 from ahcl.review import ReviewError, ReviewReceipt, packet_digest, require_independent_accept
 from ahcl.stats import StatisticalPlan, achieved_power, holm_adjust, power_check, validate_locked_study
 from ahcl.synthetic import AXES, observations
@@ -116,6 +117,36 @@ class IntegratedPortTests(unittest.TestCase):
         with self.assertRaises(CheckError):
             normalized_reconstruction_mse((math.nan,), (0.0,))
 
+    def test_combined_path_qualification_runs_all_checks(self):
+        evidence = qualify_path(
+            native_output=(1.0, 2.0),
+            instrumented_output=(1.0, 2.0),
+            repeated_output=(1.0, 2.0),
+            no_op_output=(1.0, 2.0),
+            intervened_output=(1.0, 2.5),
+            base_output=(1.0, 2.0),
+            activation=(1.0, 2.0),
+            reconstructed_activation=(1.0, 2.01),
+            clean_output=(1.0, 2.0),
+            scrubbed_output=(1.0, 2.2),
+            thresholds=QualificationThresholds(reconstruction_nmse_max=0.01),
+        )
+        self.assertEqual(evidence.parity_delta, 0.0)
+        self.assertGreater(evidence.intervention_delta, 0.0)
+        with self.assertRaises(ValueError):
+            qualify_path(
+                native_output=(1.0,),
+                instrumented_output=(1.0,),
+                repeated_output=(1.0,),
+                no_op_output=(1.0,),
+                intervened_output=(1.0,),
+                base_output=(1.0,),
+                activation=(1.0,),
+                reconstructed_activation=(2.0,),
+                clean_output=(1.0,),
+                scrubbed_output=(1.1,),
+            )
+
     def test_holm_and_power_contract(self):
         self.assertEqual(holm_adjust((0.01, 0.04)), (0.02, 0.04))
         plan = StatisticalPlan()
@@ -181,10 +212,15 @@ class IntegratedPortTests(unittest.TestCase):
             AggregateRow(str(row.family), row.split, 0, row.features, row.outcomes) for row in rows
         )
         reproduced = reproduce_metrics(independent_rows, monitor.predict)
+        reproduced_from_packet = reproduce_metrics_from_predictions(
+            independent_rows,
+            tuple(monitor.predict(row.features) for row in independent_rows),
+        )
         expected = metrics(rows, monitor)
         for index, axis in enumerate(AXES):
             self.assertAlmostEqual(reproduced[str(index)]["r2"], expected[axis]["r2"])
             self.assertAlmostEqual(reproduced[str(index)]["sign_agreement"], expected[axis]["sign_agreement"])
+            self.assertEqual(reproduced_from_packet[str(index)], reproduced[str(index)])
         shuffled = reproduce_shuffled_r2(independent_rows, monitor.predict)
         expected_shuffled = shuffled_metrics(rows, monitor)
         for index, axis in enumerate(AXES):
