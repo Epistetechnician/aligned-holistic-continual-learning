@@ -101,6 +101,13 @@ power at ICC 0.50. Fixed controls are activation-only, text-only, exact-copy
 no-op, shuffled-donor, constant-donor, and matched-donor controls. Missing or
 non-finite rows fail closed; there is no attrition replacement.
 
+The machine-readable version of this contract is in the `study` and
+`controls` fields of `configs/integrated-stack-v2.json`. `src/ahcl/lifecycle.py`
+enforces phase order and cohort disjointness without retaining raw rows.
+`src/ahcl/aggregate.py` independently recomputes row-level R², baseline R²,
+sign agreement, and the fixed shuffled control for validator use during the
+72-hour custody window.
+
 ## Review and execution gates
 
 The review packet binds the upstream lock, model revision, asset revision and

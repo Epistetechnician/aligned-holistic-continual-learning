@@ -8,6 +8,29 @@
     "raw_retention_hours": 72,
     "aggregate_only_publication": true
   },
+  "study": {
+    "family_counts": {
+      "fit": 48,
+      "tune": 48,
+      "assessment": 48
+    },
+    "repeats": 3,
+    "alpha": 0.05,
+    "power_target": 0.8,
+    "icc_assumption": 0.5,
+    "multiplicity": "Holm",
+    "missingness": "fail_closed",
+    "attrition": "zero",
+    "prediction_lock": "fit_predictor_and_tune_thresholds_before_assessment"
+  },
+  "controls": [
+    "activation_only",
+    "text_only",
+    "exact_copy_noop",
+    "shuffled_donor",
+    "constant_donor",
+    "matched_donor"
+  ],
   "model": {
     "provider": "huggingface",
     "id": "openai-community/gpt2",

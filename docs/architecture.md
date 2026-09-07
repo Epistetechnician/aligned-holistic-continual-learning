@@ -1,6 +1,6 @@
 # Monorepo architecture
 
-State slice: `aligned-holistic-continual-learning-clean-room-v1`.
+State slice: `aligned-holistic-continual-learning-integrated-stack-v2`.
 
 The system separates scientific computation from authority. The runner creates
 an aggregate-only result. The validator checks that result against the locked
@@ -26,7 +26,8 @@ present in this repository.
 
 The adapter ports in `src/ahcl/interfaces.py` are the intended consolidation
 point. Activation capture, feature encoding, interventions, and behavior
-scoring remain separate capabilities with typed boundaries. Public upstream
-projects are registered for provenance, but every registration is disabled in
-the current slice. This prevents a convenient backend import from silently
-turning a synthetic qualification into model evidence.
+scoring remain separate capabilities with typed boundaries. The pinned
+upstream projects are available as immutable submodules, while every runtime
+adapter remains disabled until the integrated review gate passes. This keeps a
+convenient backend import from silently turning a synthetic qualification into
+model evidence.

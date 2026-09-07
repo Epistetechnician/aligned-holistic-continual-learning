@@ -1,6 +1,14 @@
 {
   "config": {
     "claim_ceiling": "LocalDevelopmentIntegratedStackFeasibilityOnly",
+    "controls": [
+      "activation_only",
+      "text_only",
+      "exact_copy_noop",
+      "shuffled_donor",
+      "constant_donor",
+      "matched_donor"
+    ],
     "corpus": {
       "manifest": "external custody manifest required",
       "selection": "18 documents, author-disjoint fit/tune/assessment families",
@@ -55,12 +63,27 @@
       "transformers": null
     },
     "schema": "ahcl.integrated.stack.config.v1",
-    "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"
+    "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+    "study": {
+      "alpha": 0.05,
+      "attrition": "zero",
+      "family_counts": {
+        "assessment": 48,
+        "fit": 48,
+        "tune": 48
+      },
+      "icc_assumption": 0.5,
+      "missingness": "fail_closed",
+      "multiplicity": "Holm",
+      "power_target": 0.8,
+      "prediction_lock": "fit_predictor_and_tune_thresholds_before_assessment",
+      "repeats": 3
+    }
   },
   "corpus_manifest_digest": "5961c550e1f39cbfc4a55e11a7a8f7783c38401357fa6332f6cf88ab298a90c6",
-  "packet_digest": "c388216333960f3a48e37d9f4e590964a0d3638ada9d8bed49e97dd5dddaa0ff",
+  "packet_digest": "4e6542589b2b57a52f1840e3d5c4ad4e6183b64dfd589daeea4c695eff1e7068",
   "schema": "ahcl.review.packet.v1",
-  "source_digest": "fca3247d3cbec5da1cbaf6148ed7024f73d8a8ae621e3596f01b8cc94949ae70",
+  "source_digest": "16ed8c66d3f9dd909a955a6d683d7bda491e2e6e876a928d49aad16073a35c4c",
   "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
   "upstream_lock_digest": "a8d9c2021615d01a02da231e01e7a72f9c9eb5db7c6fb5627f41967064ae9b97"
 }

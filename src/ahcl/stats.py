@@ -6,7 +6,7 @@ State slice: aligned-holistic-continual-learning-integrated-stack-v2.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Any, Sequence
 
 
 @dataclass(frozen=True)
@@ -19,6 +19,61 @@ class StatisticalPlan:
     power: float = 0.80
     icc: float = 0.50
     multiplicity: str = "Holm"
+
+    def as_config(self) -> dict[str, Any]:
+        return {
+            "family_counts": {
+                "fit": self.fit_families,
+                "tune": self.tune_families,
+                "assessment": self.assessment_families,
+            },
+            "repeats": self.repeats,
+            "alpha": self.alpha,
+            "power_target": self.power,
+            "icc_assumption": self.icc,
+            "multiplicity": self.multiplicity,
+        }
+
+    def validate(self) -> None:
+        power_check(self)
+
+
+FROZEN_CONTROLS = (
+    "activation_only",
+    "text_only",
+    "exact_copy_noop",
+    "shuffled_donor",
+    "constant_donor",
+    "matched_donor",
+)
+
+
+def validate_locked_study(config: dict[str, Any]) -> StatisticalPlan:
+    """Validate the machine-readable study lock and return its plan."""
+
+    study = config.get("study")
+    if not isinstance(study, dict):
+        raise ValueError("study lock is missing")
+    plan = StatisticalPlan(
+        fit_families=study.get("family_counts", {}).get("fit", 0),
+        tune_families=study.get("family_counts", {}).get("tune", 0),
+        assessment_families=study.get("family_counts", {}).get("assessment", 0),
+        repeats=study.get("repeats", 0),
+        alpha=study.get("alpha", -1.0),
+        power=study.get("power_target", -1.0),
+        icc=study.get("icc_assumption", -1.0),
+        multiplicity=study.get("multiplicity", ""),
+    )
+    plan.validate()
+    if plan.as_config() != {key: study[key] for key in plan.as_config()}:
+        raise ValueError("study lock has unexpected values")
+    if tuple(config.get("controls", ())) != FROZEN_CONTROLS:
+        raise ValueError("control roster is not the frozen ordered roster")
+    if study.get("missingness") != "fail_closed" or study.get("attrition") != "zero":
+        raise ValueError("missingness and attrition policies must fail closed")
+    if study.get("prediction_lock") != "fit_predictor_and_tune_thresholds_before_assessment":
+        raise ValueError("prediction-lock policy is not frozen")
+    return plan
 
 
 def holm_adjust(p_values: Sequence[float]) -> tuple[float, ...]:
@@ -36,7 +91,9 @@ def holm_adjust(p_values: Sequence[float]) -> tuple[float, ...]:
 
 
 def power_check(plan: StatisticalPlan) -> None:
-    if not 0.0 < plan.power <= 1.0 or not 0.0 <= plan.icc < 1.0:
-        raise ValueError("invalid power or ICC")
+    if not 0.0 < plan.alpha < 1.0 or not 0.0 < plan.power <= 1.0 or not 0.0 <= plan.icc < 1.0:
+        raise ValueError("invalid alpha, power, or ICC")
+    if plan.multiplicity != "Holm":
+        raise ValueError("only the frozen Holm correction is permitted")
     if min(plan.fit_families, plan.tune_families, plan.assessment_families, plan.repeats) < 1:
         raise ValueError("all cohort counts must be positive")

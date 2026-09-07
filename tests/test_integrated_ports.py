@@ -18,6 +18,7 @@ from ahcl.adapters import (
     SAELensFeatureAdapter,
     TransformerLensActivationAdapter,
 )
+from ahcl.aggregate import AggregateRow, reproduce_metrics, reproduce_shuffled_r2
 from ahcl.checks import (
     CheckError,
     assert_intervention_reach,
@@ -26,9 +27,12 @@ from ahcl.checks import (
 )
 from ahcl.execution import ExecutionClosed, require_execution_open
 from ahcl.custody import CustodyError, build_manifest, validate_manifest
+from ahcl.lifecycle import LifecycleError, LockedTrial, TrialRow
+from ahcl.monitor import RidgeMonitor, metrics, shuffled_metrics
 from ahcl.preflight import build_review_packet, validate_review_packet
 from ahcl.review import ReviewError, ReviewReceipt, packet_digest, require_independent_accept
 from ahcl.stats import StatisticalPlan, holm_adjust, power_check
+from ahcl.synthetic import AXES, observations
 
 
 class IntegratedPortTests(unittest.TestCase):
@@ -102,6 +106,44 @@ class IntegratedPortTests(unittest.TestCase):
     def test_holm_and_power_contract(self):
         self.assertEqual(holm_adjust((0.01, 0.04)), (0.02, 0.04))
         power_check(StatisticalPlan())
+
+    def test_independent_aggregates_match_locked_monitor(self):
+        rows = observations("assessment", "fixed_update")
+        monitor = RidgeMonitor.fit(observations("fit", "fixed_update"), ridge=0.1)
+        independent_rows = tuple(
+            AggregateRow(str(row.family), row.split, 0, row.features, row.outcomes) for row in rows
+        )
+        reproduced = reproduce_metrics(independent_rows, monitor.predict)
+        expected = metrics(rows, monitor)
+        for index, axis in enumerate(AXES):
+            self.assertAlmostEqual(reproduced[str(index)]["r2"], expected[axis]["r2"])
+            self.assertAlmostEqual(reproduced[str(index)]["sign_agreement"], expected[axis]["sign_agreement"])
+        shuffled = reproduce_shuffled_r2(independent_rows, monitor.predict)
+        expected_shuffled = shuffled_metrics(rows, monitor)
+        for index, axis in enumerate(AXES):
+            self.assertAlmostEqual(shuffled[str(index)], expected_shuffled[axis])
+
+    def test_locked_trial_enforces_phase_order_and_disjoint_cohorts(self):
+        plan = StatisticalPlan(fit_families=2, tune_families=2, assessment_families=2, repeats=2)
+        config = {"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"}
+        trial = LockedTrial(config, plan)
+
+        def rows(split, offset):
+            return tuple(
+                TrialRow(f"f{offset + family}", split, repeat, (float(family),), (float(repeat),))
+                for family in range(2)
+                for repeat in range(2)
+            )
+
+        with self.assertRaises(LifecycleError):
+            trial.tune(rows("tune", 2), lambda _predictor, _rows: {"score": 1.0})
+        trial.fit(rows("fit", 0), lambda fit_rows: ("predictor", {"kind": "test"}))
+        lock = trial.tune(rows("tune", 2), lambda _predictor, _rows: {"score": 1.0})
+        self.assertEqual(trial.phase, "locked")
+        self.assertEqual(lock.tune_summary, {"score": 1.0})
+        self.assertEqual(trial.assess(rows("assessment", 4), lambda _predictor, _rows: {"score": 2.0}), {"score": 2.0})
+        with self.assertRaises(LifecycleError):
+            trial.assess(rows("assessment", 0), lambda _predictor, _rows: {"score": 2.0})
 
     def test_operator_cannot_self_accept(self):
         packet = {"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"}

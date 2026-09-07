@@ -2,6 +2,9 @@
 
 State slice: `aligned-holistic-continual-learning-clean-room-v1`.
 
+This document is the immutable synthetic baseline. The integrated model-backed
+continuation is specified separately in `docs/integrated-experiment-v2.md`.
+
 ## Question and hypothesis
 
 The question is whether a small, fixed causal feature map can predict several
