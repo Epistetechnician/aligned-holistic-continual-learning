@@ -1,0 +1,21 @@
+[submodule "third_party/transformerlens"]
+	path = third_party/transformerlens
+	url = https://github.com/TransformerLensOrg/TransformerLens.git
+[submodule "third_party/saelens"]
+	path = third_party/saelens
+	url = https://github.com/decoderesearch/SAELens.git
+[submodule "third_party/circuit-tracer"]
+	path = third_party/circuit-tracer
+	url = https://github.com/safety-research/circuit-tracer.git
+[submodule "third_party/nnsight"]
+	path = third_party/nnsight
+	url = https://github.com/ndif-team/nnsight.git
+[submodule "third_party/pyvene"]
+	path = third_party/pyvene
+	url = https://github.com/stanfordnlp/pyvene.git
+[submodule "third_party/acdc"]
+	path = third_party/acdc
+	url = https://github.com/ArthurConmy/Automatic-Circuit-Discovery.git
+[submodule "third_party/neuronpedia"]
+	path = third_party/neuronpedia
+	url = https://github.com/hijohnnylin/neuronpedia.git

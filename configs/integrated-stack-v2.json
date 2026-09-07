@@ -1,0 +1,58 @@
+{
+  "schema": "ahcl.integrated.stack.config.v1",
+  "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+  "execution": {
+    "enabled": false,
+    "reason": "independent protocol and execution review are required before model-bearing assessment",
+    "network_during_model_execution": false,
+    "raw_retention_hours": 72,
+    "aggregate_only_publication": true
+  },
+  "model": {
+    "provider": "huggingface",
+    "id": "openai-community/gpt2",
+    "revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e",
+    "rationale": "ungated small reference model supported by TransformerLens, NNsight, pyvene, and ACDC",
+    "sha256": "248dfc3911869ec493c76e65bf2fcf7f615828b0254c12b473182f0f81d3a707",
+    "custody_file": "model/gpt2/model.safetensors",
+    "license": "MIT"
+  },
+  "runtime": {
+    "python": "3.11.11",
+    "rust": "1.87.0",
+    "torch": null,
+    "transformers": null,
+    "transformerlens_commit": "2a05c15df238caf8b7869188ea27b5d39a903d35",
+    "saelens_commit": "ee45e7406165ce267b33d33b7371bbb63ef24db8",
+    "circuit_tracer_commit": "6018ed8d35e40f2c50062822e8dde422b8e52e2d",
+    "nnsight_commit": "87f4dadaae254c6d36e8820cc83a251623b8dda7",
+    "pyvene_commit": "9e333904dcf9e597ca76170010d17f4d4580de8d",
+    "acdc_commit": "bc99ace817974b5584b7ee203d596a8e2bbcd399",
+    "neuronpedia_commit": "df03cfee33e9023866eba6f828d9e34900932877"
+  },
+  "feature_asset": {
+    "kind": "saelens_pretrained_sae",
+    "release": "gpt2-small-mlp-out-v5-32k",
+    "repository": "jbloom/GPT2-Small-OAI-v5-32k-mlp-out-SAEs",
+    "sae_id": "v5_32k_layer_6",
+    "revision": "123b02d81b5b2b542afa1503b2fb5f1c70b98681",
+    "sha256": "3105f1072fa405f49c442269f43c553fbdc3e6526b6bc0445eaa6c5cd683838b",
+    "custody_file": "feature-asset/sae_weights.safetensors",
+    "license": "MIT",
+    "status": "custodied_pending_independent_review"
+  },
+  "corpus": {
+    "source": "Project Gutenberg public-domain prose",
+    "selection": "18 documents, author-disjoint fit/tune/assessment families",
+    "manifest": "external custody manifest required",
+    "sha256": "ca333265062744326f2ed9f15a3f28de5c6a15d04c8b1e196d68b0ddf6a1b4cf",
+    "status": "custodied_pending_independent_review"
+  },
+  "custody": {
+    "root_env": "AHCL_CUSTODY_ROOT",
+    "manifest_digest": "059babda7993b9cb2625e1acba8c836ff1e2d8539eef9ebac1f10b29e9ba27a1",
+    "permissions": "0700",
+    "file_count": 29
+  },
+  "claim_ceiling": "LocalDevelopmentIntegratedStackFeasibilityOnly"
+}

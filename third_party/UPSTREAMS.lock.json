@@ -1,0 +1,69 @@
+{
+  "schema": "ahcl.upstreams.lock.v1",
+  "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+  "submodules": [
+    {
+      "name": "transformerlens",
+      "path": "third_party/transformerlens",
+      "url": "https://github.com/TransformerLensOrg/TransformerLens.git",
+      "commit": "2a05c15df238caf8b7869188ea27b5d39a903d35",
+      "license": "MIT",
+      "license_files": ["LICENSE"],
+      "role": "activation capture and cache editing"
+    },
+    {
+      "name": "saelens",
+      "path": "third_party/saelens",
+      "url": "https://github.com/decoderesearch/SAELens.git",
+      "commit": "ee45e7406165ce267b33d33b7371bbb63ef24db8",
+      "license": "MIT",
+      "license_files": ["LICENSE"],
+      "role": "sparse feature encoding and reconstruction"
+    },
+    {
+      "name": "circuit-tracer",
+      "path": "third_party/circuit-tracer",
+      "url": "https://github.com/safety-research/circuit-tracer.git",
+      "commit": "6018ed8d35e40f2c50062822e8dde422b8e52e2d",
+      "license": "MIT",
+      "license_files": ["LICENSE"],
+      "role": "attribution graph and feature intervention"
+    },
+    {
+      "name": "nnsight",
+      "path": "third_party/nnsight",
+      "url": "https://github.com/ndif-team/nnsight.git",
+      "commit": "87f4dadaae254c6d36e8820cc83a251623b8dda7",
+      "license": "MIT",
+      "license_files": ["LICENSE"],
+      "role": "local PyTorch tracing and activation intervention"
+    },
+    {
+      "name": "pyvene",
+      "path": "third_party/pyvene",
+      "url": "https://github.com/stanfordnlp/pyvene.git",
+      "commit": "9e333904dcf9e597ca76170010d17f4d4580de8d",
+      "license": "Apache-2.0",
+      "license_files": ["LICENSE"],
+      "role": "composable representation interventions"
+    },
+    {
+      "name": "acdc",
+      "path": "third_party/acdc",
+      "url": "https://github.com/ArthurConmy/Automatic-Circuit-Discovery.git",
+      "commit": "bc99ace817974b5584b7ee203d596a8e2bbcd399",
+      "license": "MIT",
+      "license_files": ["LICENSE"],
+      "role": "automated circuit discovery reference"
+    },
+    {
+      "name": "neuronpedia",
+      "path": "third_party/neuronpedia",
+      "url": "https://github.com/hijohnnylin/neuronpedia.git",
+      "commit": "df03cfee33e9023866eba6f828d9e34900932877",
+      "license": "Apache-2.0",
+      "license_files": ["LICENSE", "NOTICE", "LICENSE-MIT"],
+      "role": "local feature browser and aggregate visualization reference"
+    }
+  ]
+}

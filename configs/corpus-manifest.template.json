@@ -1,0 +1,29 @@
+{
+  "schema": "ahcl.corpus.manifest.v1",
+  "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+  "source": "https://www.gutenberg.org/",
+  "selection_rule": "one public-domain document per author; six documents per split",
+  "documents": [
+    {"split": "fit", "id": 1342, "title": "Pride and Prejudice", "author": "Jane Austen", "sha256": null},
+    {"split": "fit", "id": 84, "title": "Frankenstein", "author": "Mary Shelley", "sha256": null},
+    {"split": "fit", "id": 11, "title": "Alice's Adventures in Wonderland", "author": "Lewis Carroll", "sha256": null},
+    {"split": "fit", "id": 1661, "title": "The Adventures of Sherlock Holmes", "author": "Arthur Conan Doyle", "sha256": null},
+    {"split": "fit", "id": 46, "title": "A Christmas Carol", "author": "Charles Dickens", "sha256": null},
+    {"split": "fit", "id": 345, "title": "Dracula", "author": "Bram Stoker", "sha256": null},
+    {"split": "tune", "id": 2600, "title": "War and Peace", "author": "Leo Tolstoy", "sha256": null},
+    {"split": "tune", "id": 2554, "title": "Crime and Punishment", "author": "Fyodor Dostoevsky", "sha256": null},
+    {"split": "tune", "id": 174, "title": "The Picture of Dorian Gray", "author": "Oscar Wilde", "sha256": null},
+    {"split": "tune", "id": 2701, "title": "Moby-Dick", "author": "Herman Melville", "sha256": null},
+    {"split": "tune", "id": 76, "title": "Adventures of Huckleberry Finn", "author": "Mark Twain", "sha256": null},
+    {"split": "tune", "id": 1232, "title": "The Prince", "author": "Niccolo Machiavelli", "sha256": null},
+    {"split": "assessment", "id": 5200, "title": "The Metamorphosis", "author": "Franz Kafka", "sha256": null},
+    {"split": "assessment", "id": 1080, "title": "A Modest Proposal", "author": "Jonathan Swift", "sha256": null},
+    {"split": "assessment", "id": 1184, "title": "The Count of Monte Cristo", "author": "Alexandre Dumas", "sha256": null},
+    {"split": "assessment", "id": 1260, "title": "Jane Eyre", "author": "Charlotte Bronte", "sha256": null},
+    {"split": "assessment", "id": 996, "title": "Don Quixote", "author": "Miguel de Cervantes Saavedra", "sha256": null},
+    {"split": "assessment", "id": 1727, "title": "The Odyssey", "author": "Homer", "sha256": null}
+  ],
+  "tokenizer": {"name": "openai-community/gpt2", "revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e", "sha256": null},
+  "custody_root": "external-owner-only-path-required",
+  "status": "template_only_pending_independent_review"
+}

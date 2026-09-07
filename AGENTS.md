@@ -1,23 +1,30 @@
-# Clean-room research repository rules
+# Integrated upstream research rules
 
 All mutations in this repository belong to the named state slice
-`aligned-holistic-continual-learning-clean-room-v1`.
+`aligned-holistic-continual-learning-integrated-stack-v2`.
 
-This repository is a clean-room implementation. It may implement public,
-documented methods and cite public literature, but it must not copy code,
-datasets, prompts, traces, generated outputs, private details, or hidden
-artifacts from another repository. Every external method has a provenance
-entry in `docs/literature.md`.
+The clean-room synthetic baseline is immutable at commits `2109889` and
+`6057c8f`. This slice explicitly authorizes immutable upstream source
+submodules under `third_party/`, with exact commit pins and license records in
+`third_party/UPSTREAMS.lock.json`. Do not edit vendored submodule contents in
+this repository.
 
-The initial experiment is synthetic only. Model-bearing execution, data
-acquisition, provider calls, production traffic, and publication claims are
-closed until a new reviewed state slice explicitly opens them. Aggregate
-outputs are reproducible and contain no raw prompts, activations, or traces.
+Upstream source may be called only through adapters under
+`src/ahcl/adapters/`. Adapter imports are lazy, credentials are never stored,
+and each adapter must expose parity, repeatability, no-op, and intervention
+reach checks before it can be enabled.
 
-Keep the base implementation immutable for an experiment run. Prediction
-locking happens before assessment metrics are computed. The validator is a
-separate contract check and may reject malformed or self-inconsistent output.
-No result is promoted by the runner itself.
+Model weights, feature assets, and fresh corpus bytes must live outside Git
+under an owner-only custody root with a manifest and retention policy. The
+current slice authorizes configuration and preflight code, but model-bearing
+execution, provider calls, and assessment remain closed until an independent
+protocol/execution review accepts the exact packet. The runner cannot
+self-sign that review.
+
+Keep fit, tune, and assessment identities disjoint. Lock the predictor and all
+thresholds before assessment. Publish aggregate metrics only. A result may not
+claim mechanistic understanding, alignment, continual-learning superiority, or
+production readiness beyond its recorded evidence ceiling.
 
 Measure twice, cut once. Keep the codebase clean: no temporary files, dead
 code, dead files, or untracked generated artifacts.

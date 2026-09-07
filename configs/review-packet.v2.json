@@ -1,0 +1,66 @@
+{
+  "config": {
+    "claim_ceiling": "LocalDevelopmentIntegratedStackFeasibilityOnly",
+    "corpus": {
+      "manifest": "external custody manifest required",
+      "selection": "18 documents, author-disjoint fit/tune/assessment families",
+      "sha256": "ca333265062744326f2ed9f15a3f28de5c6a15d04c8b1e196d68b0ddf6a1b4cf",
+      "source": "Project Gutenberg public-domain prose",
+      "status": "custodied_pending_independent_review"
+    },
+    "custody": {
+      "file_count": 29,
+      "manifest_digest": "059babda7993b9cb2625e1acba8c836ff1e2d8539eef9ebac1f10b29e9ba27a1",
+      "permissions": "0700",
+      "root_env": "AHCL_CUSTODY_ROOT"
+    },
+    "execution": {
+      "aggregate_only_publication": true,
+      "enabled": false,
+      "network_during_model_execution": false,
+      "raw_retention_hours": 72,
+      "reason": "independent protocol and execution review are required before model-bearing assessment"
+    },
+    "feature_asset": {
+      "custody_file": "feature-asset/sae_weights.safetensors",
+      "kind": "saelens_pretrained_sae",
+      "license": "MIT",
+      "release": "gpt2-small-mlp-out-v5-32k",
+      "repository": "jbloom/GPT2-Small-OAI-v5-32k-mlp-out-SAEs",
+      "revision": "123b02d81b5b2b542afa1503b2fb5f1c70b98681",
+      "sae_id": "v5_32k_layer_6",
+      "sha256": "3105f1072fa405f49c442269f43c553fbdc3e6526b6bc0445eaa6c5cd683838b",
+      "status": "custodied_pending_independent_review"
+    },
+    "model": {
+      "custody_file": "model/gpt2/model.safetensors",
+      "id": "openai-community/gpt2",
+      "license": "MIT",
+      "provider": "huggingface",
+      "rationale": "ungated small reference model supported by TransformerLens, NNsight, pyvene, and ACDC",
+      "revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e",
+      "sha256": "248dfc3911869ec493c76e65bf2fcf7f615828b0254c12b473182f0f81d3a707"
+    },
+    "runtime": {
+      "acdc_commit": "bc99ace817974b5584b7ee203d596a8e2bbcd399",
+      "circuit_tracer_commit": "6018ed8d35e40f2c50062822e8dde422b8e52e2d",
+      "neuronpedia_commit": "df03cfee33e9023866eba6f828d9e34900932877",
+      "nnsight_commit": "87f4dadaae254c6d36e8820cc83a251623b8dda7",
+      "python": "3.11.11",
+      "pyvene_commit": "9e333904dcf9e597ca76170010d17f4d4580de8d",
+      "rust": "1.87.0",
+      "saelens_commit": "ee45e7406165ce267b33d33b7371bbb63ef24db8",
+      "torch": null,
+      "transformerlens_commit": "2a05c15df238caf8b7869188ea27b5d39a903d35",
+      "transformers": null
+    },
+    "schema": "ahcl.integrated.stack.config.v1",
+    "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"
+  },
+  "corpus_manifest_digest": "5961c550e1f39cbfc4a55e11a7a8f7783c38401357fa6332f6cf88ab298a90c6",
+  "packet_digest": "c388216333960f3a48e37d9f4e590964a0d3638ada9d8bed49e97dd5dddaa0ff",
+  "schema": "ahcl.review.packet.v1",
+  "source_digest": "fca3247d3cbec5da1cbaf6148ed7024f73d8a8ae621e3596f01b8cc94949ae70",
+  "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+  "upstream_lock_digest": "a8d9c2021615d01a02da231e01e7a72f9c9eb5db7c6fb5627f41967064ae9b97"
+}

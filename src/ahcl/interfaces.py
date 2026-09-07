@@ -1,6 +1,6 @@
 """Vendor-neutral ports for future model-backed interpretability adapters.
 
-State slice: aligned-holistic-continual-learning-clean-room-v1.
+State slice: aligned-holistic-continual-learning-integrated-stack-v2.
 The ports deliberately carry typed records rather than owning storage or
 provider credentials. All registrations are disabled in this slice.
 """
@@ -8,7 +8,7 @@ provider credentials. All registrations are disabled in this slice.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping, Protocol, Sequence
+from typing import Any, Mapping, Protocol, Sequence
 
 
 @dataclass(frozen=True)
@@ -17,7 +17,7 @@ class ActivationRecord:
 
     run_id: str
     module: str
-    values: tuple[tuple[float, ...], ...]
+    values: Any
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ class FeatureRecord:
 
     layer: int
     feature_ids: tuple[int, ...]
-    values: tuple[tuple[float, ...], ...]
+    values: Any
 
 
 class ActivationBackend(Protocol):
@@ -50,6 +50,21 @@ class InterventionBackend(Protocol):
         position: int,
     ) -> ActivationRecord:
         """Return a new activation record after a declared replacement."""
+
+
+class FeatureInterventionBackend(Protocol):
+    def feature_intervention(
+        self,
+        input_ids: Any,
+        interventions: Sequence[tuple[int, int, int, float]],
+        **kwargs: Any,
+    ) -> Any:
+        """Apply named feature interventions and return backend-native output."""
+
+
+class CircuitDiscoveryBackend(Protocol):
+    def discover(self, **kwargs: Any) -> Any:
+        """Run a declared circuit-discovery task on caller-owned data."""
 
 
 class BehaviorBackend(Protocol):

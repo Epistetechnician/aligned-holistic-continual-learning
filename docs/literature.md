@@ -1,6 +1,6 @@
 # Public literature and implementation provenance
 
-State slice: `aligned-holistic-continual-learning-clean-room-v1`.
+State slice: `aligned-holistic-continual-learning-integrated-stack-v2`.
 
 These references define public methods or limitations that informed the
 interfaces. They are reading material, not evidence imported into the
@@ -25,3 +25,24 @@ Before a model-backed continuation, each selected source must be pinned to an
 exact revision, license recorded, and its role restricted to a public method
 or a reproducible asset. A citation never substitutes for an independent
 review or held-out evidence.
+
+## Integrated source pins
+
+The source forks are Git submodules, not copied files. Their exact commit
+identities and license files are machine-readable in
+`third_party/UPSTREAMS.lock.json`:
+
+| Source | Pinned commit | License identity |
+| --- | --- | --- |
+| TransformerLens | `2a05c15df238caf8b7869188ea27b5d39a903d35` | MIT, `LICENSE` |
+| SAELens | `ee45e7406165ce267b33d33b7371bbb63ef24db8` | MIT, `LICENSE` |
+| circuit-tracer | `6018ed8d35e40f2c50062822e8dde422b8e52e2d` | MIT, `LICENSE` |
+| NNsight | `87f4dadaae254c6d36e8820cc83a251623b8dda7` | MIT, `LICENSE` |
+| pyvene | `9e333904dcf9e597ca76170010d17f4d4580de8d` | Apache-2.0, `LICENSE` |
+| ACDC | `bc99ace817974b5584b7ee203d596a8e2bbcd399` | MIT, `LICENSE` |
+| Neuronpedia | `df03cfee33e9023866eba6f828d9e34900932877` | Apache-2.0 plus `NOTICE` and `LICENSE-MIT` |
+
+The pinned sources have incompatible dependency lanes: TransformerLens at this
+revision requires Transformers 5.9 or newer, while circuit-tracer caps
+Transformers at 4.57.3. The integrated design isolates those lanes rather than
+claiming a single installable environment.

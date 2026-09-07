@@ -1,0 +1,32 @@
+{
+  "schema": "ahcl.dependency.lanes.v1",
+  "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+  "lanes": {
+    "modern": {
+      "purpose": "activation capture, SAE encoding, and composable interventions",
+      "sources": ["transformerlens", "saelens", "nnsight", "pyvene"],
+      "constraints": {
+        "python": "3.11.11",
+        "transformers": ">=5.9.0",
+        "torch": ">=2.6"
+      }
+    },
+    "legacy_circuit": {
+      "purpose": "circuit-tracer feature graphs and ACDC discovery",
+      "sources": ["circuit-tracer", "acdc"],
+      "constraints": {
+        "python": "3.11.11",
+        "transformers": ">=4.56.0,<=4.57.3",
+        "nnsight": "==0.6.1",
+        "torch": ">=2.0"
+      }
+    },
+    "visualization": {
+      "purpose": "local Neuronpedia feature display and aggregate browsing",
+      "sources": ["neuronpedia"],
+      "network": "disabled_until_review"
+    }
+  },
+  "exchange_contract": "canonical aggregate JSON and packet-bound digests",
+  "single_environment": false
+}

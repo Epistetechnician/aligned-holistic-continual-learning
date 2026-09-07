@@ -6,6 +6,12 @@ continual-learning update while retaining a locked base model? The first
 implementation is a deterministic synthetic qualification. It exercises the
 full research lifecycle without downloading a model or retaining raw traces.
 
+The integrated upstream slice adds pinned source submodules and lazy adapters.
+Install them with `git submodule update --init --recursive`; do not edit the
+submodule contents. The model-backed design is recorded in
+`docs/integrated-experiment-v2.md` and is fail-closed until independent review
+accepts its packet.
+
 The repository has three bounded layers:
 
 - `src/ahcl/` contains the synthetic stream, fixed feature interventions,
