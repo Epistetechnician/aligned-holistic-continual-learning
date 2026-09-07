@@ -90,9 +90,9 @@
   },
   "corpus_manifest_digest": "5961c550e1f39cbfc4a55e11a7a8f7783c38401357fa6332f6cf88ab298a90c6",
   "dependency_lanes_digest": "5666ac00a6bb1f21bf472215a28e08d52d464b7882a92892c089392fca9237fe",
-  "packet_digest": "e0148565e9fcc5a2a485c1775dd1b28bb5e000fe63b564cc03440fc80366f66e",
+  "packet_digest": "0cb202ae883bd7463ca6a461a24669e564d8ac440ff3622fab28a6458e1f419c",
   "schema": "ahcl.review.packet.v1",
-  "source_digest": "c4eec2dc4f2b05071b3df34b993a4838d58ce6cf1117800eb82e197d7cefb6ff",
+  "source_digest": "ef9dcc307c9c532bddb8487f6796ecc28c8a51084ae54a56e152d3903fbf076f",
   "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
   "upstream_lock_digest": "a8d9c2021615d01a02da231e01e7a72f9c9eb5db7c6fb5627f41967064ae9b97"
 }
