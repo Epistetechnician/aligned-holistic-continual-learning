@@ -18,7 +18,8 @@ The repository has three bounded layers:
   ridge monitor, fit/tune lock, assessment metrics, aggregate output, and
   vendor-neutral adapter ports. The integrated lifecycle and independent
   aggregate calculator are fail-closed until the review gate opens. The
-  public backend registry is quarantined.
+  monitor controller is compared with fixed-update, EWC, and behavioral-guard
+  policies. The public backend registry is quarantined.
 - `crates/admission-core/` contains a dependency-free Rust policy kernel. It
   can quarantine a candidate until independent held-out evidence and a locked
   prediction packet exist.

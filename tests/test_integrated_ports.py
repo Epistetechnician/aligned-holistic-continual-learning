@@ -27,11 +27,19 @@ from ahcl.checks import (
 )
 from ahcl.execution import ExecutionClosed, require_execution_open
 from ahcl.custody import CustodyError, build_manifest, validate_manifest
+from ahcl.controllers import (
+    BehavioralGuardController,
+    ControlError,
+    FixedUpdateController,
+    MonitorControlledUpdatePolicy,
+    RetentionGuardController,
+)
+from ahcl.continual import StreamBatch
 from ahcl.lifecycle import LifecycleError, LockedTrial, TrialRow
 from ahcl.monitor import RidgeMonitor, metrics, shuffled_metrics
-from ahcl.preflight import build_review_packet, validate_review_packet
+from ahcl.preflight import build_review_packet, validate_dependency_lanes, validate_review_packet
 from ahcl.review import ReviewError, ReviewReceipt, packet_digest, require_independent_accept
-from ahcl.stats import StatisticalPlan, holm_adjust, power_check
+from ahcl.stats import StatisticalPlan, holm_adjust, power_check, validate_locked_study
 from ahcl.synthetic import AXES, observations
 
 
@@ -70,6 +78,11 @@ class IntegratedPortTests(unittest.TestCase):
             for license_file in item["license_files"]:
                 self.assertTrue((Path(item["path"]) / license_file).exists())
 
+    def test_dependency_lanes_match_runtime_lock(self):
+        config = json.loads(Path("configs/integrated-stack-v2.json").read_text(encoding="utf-8"))
+        digest = validate_dependency_lanes(Path("configs/dependency-lanes.json"), config)
+        self.assertEqual(len(digest), 64)
+
     def test_custody_manifest_hashes_regular_files(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -106,6 +119,58 @@ class IntegratedPortTests(unittest.TestCase):
     def test_holm_and_power_contract(self):
         self.assertEqual(holm_adjust((0.01, 0.04)), (0.02, 0.04))
         power_check(StatisticalPlan())
+
+    def test_machine_readable_study_lock_is_frozen(self):
+        config = json.loads(Path("configs/integrated-stack-v2.json").read_text(encoding="utf-8"))
+        plan = validate_locked_study(config)
+        self.assertEqual(plan.as_config()["family_counts"], {"fit": 48, "tune": 48, "assessment": 48})
+        altered = dict(config)
+        altered["controls"] = list(reversed(altered["controls"]))
+        with self.assertRaises(ValueError):
+            validate_locked_study(altered)
+
+    def test_monitor_controller_gates_updates_and_behavioral_comparator(self):
+        class CountingPolicy:
+            def __init__(self):
+                self.calls = 0
+
+            def update(self, _batch):
+                self.calls += 1
+                return 1.25
+
+        batch = StreamBatch("b1", (), (), {})
+        base = CountingPolicy()
+        controller = RetentionGuardController(retention_harm_ceiling=0.2)
+        policy = MonitorControlledUpdatePolicy(
+            base,
+            feature_extractor=lambda _batch: (1.0, 2.0, 3.0),
+            predictor=lambda _features: (0.0, 0.3, 0.0, 0.0),
+            controller=controller,
+        )
+        self.assertEqual(policy.update(batch), 0.0)
+        self.assertEqual(base.calls, 0)
+        self.assertEqual(policy.last_decision.reason, "predicted_retention_harm")
+
+        policy.predictor = lambda _features: (0.2, 0.1, 0.0, 0.0)
+        self.assertEqual(policy.update(batch), 1.25)
+        self.assertEqual(base.calls, 1)
+        self.assertEqual(policy.control_summary()["applied_updates"], 1)
+        self.assertEqual(FixedUpdateController().decide((0.0,)).action, "apply")
+
+        always_skip = MonitorControlledUpdatePolicy(
+            CountingPolicy(),
+            feature_extractor=lambda _batch: (1.0,),
+            predictor=lambda _features: (0.0, 1.0),
+            controller=RetentionGuardController(retention_harm_ceiling=0.2),
+        )
+        always_skip.update(batch)
+        with self.assertRaises(ControlError):
+            always_skip.control_summary()
+
+        behavior = BehavioralGuardController(retention_harm_ceiling=0.2)
+        self.assertEqual(behavior.decide_from_metrics({"retention_harm": 0.3}).action, "skip")
+        with self.assertRaises(ControlError):
+            behavior.decide_from_metrics({"retention_harm": float("nan")})
 
     def test_independent_aggregates_match_locked_monitor(self):
         rows = observations("assessment", "fixed_update")
@@ -148,6 +213,12 @@ class IntegratedPortTests(unittest.TestCase):
     def test_operator_cannot_self_accept(self):
         packet = {"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"}
         receipt = ReviewReceipt(packet_digest(packet), "operator", "ACCEPT", "signed")
+        with self.assertRaises(ReviewError):
+            require_independent_accept(receipt, expected_packet_digest=packet_digest(packet), operator_id="operator")
+
+    def test_review_requires_independent_signature_verifier(self):
+        packet = {"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"}
+        receipt = ReviewReceipt(packet_digest(packet), "reviewer", "ACCEPT", "signed", public_key_id="key-1")
         with self.assertRaises(ReviewError):
             require_independent_accept(receipt, expected_packet_digest=packet_digest(packet), operator_id="operator")
 

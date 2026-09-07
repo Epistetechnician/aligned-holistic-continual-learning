@@ -176,9 +176,16 @@ def open_model_trial(
     *,
     packet_digest: str,
     operator_id: str,
+    verify_signature: Callable[[ReviewReceipt, str], bool] | None = None,
 ) -> LockedTrial:
     """Open a model-bearing lifecycle only after independent review."""
 
     config_dict = dict(config)
-    require_execution_open(config_dict, receipt, packet_digest=packet_digest, operator_id=operator_id)
+    require_execution_open(
+        config_dict,
+        receipt,
+        packet_digest=packet_digest,
+        operator_id=operator_id,
+        verify_signature=verify_signature,
+    )
     return LockedTrial(config_dict)

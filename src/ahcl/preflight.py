@@ -33,6 +33,40 @@ def validate_upstream_lock(lock_path: Path) -> str:
     return digest(lock)
 
 
+def validate_dependency_lanes(lanes_path: Path, config: dict[str, Any]) -> str:
+    """Validate that the selected runtime versions match every lane lock."""
+
+    lanes = json.loads(lanes_path.read_text(encoding="utf-8"))
+    if lanes.get("schema") != "ahcl.dependency.lanes.v1" or lanes.get("single_environment") is not False:
+        raise PreflightError("dependency lanes must remain explicitly isolated")
+    runtime = config.get("runtime", {})
+    modern = lanes.get("lanes", {}).get("modern", {}).get("constraints", {})
+    if modern != {
+        "python": "3.11.11",
+        "transformers": f"=={runtime.get('transformers')}",
+        "torch": f"=={runtime.get('torch')}",
+    }:
+        raise PreflightError("modern lane does not match the configured runtime")
+    circuit = lanes.get("lanes", {}).get("circuit_tracer", {}).get("constraints", {})
+    if circuit != {
+        "python": "3.11.11",
+        "transformers": f"=={runtime.get('circuit_tracer_transformers')}",
+        "nnsight": "==0.6.1",
+        "transformer-lens": f"=={runtime.get('circuit_tracer_transformer_lens')}",
+        "torch": f"=={runtime.get('circuit_tracer_torch')}",
+    }:
+        raise PreflightError("circuit-tracer lane does not match the configured runtime")
+    acdc = lanes.get("lanes", {}).get("acdc", {}).get("constraints", {})
+    if acdc != {
+        "python": "3.11.11",
+        "transformers": f"=={runtime.get('acdc_transformers')}",
+        "transformer-lens": f"=={runtime.get('acdc_transformer_lens')}",
+        "torch": f"=={runtime.get('acdc_torch')}",
+    }:
+        raise PreflightError("ACDC lane does not match the configured runtime")
+    return digest(lanes)
+
+
 def source_tree_digest(root: Path) -> str:
     """Hash the authored source, tests, configs, and protocol records."""
 
@@ -44,7 +78,12 @@ def source_tree_digest(root: Path) -> str:
                 # create a circular identity. Review records carry the packet
                 # digest too, so they are validated separately below.
                 relative = path.relative_to(root)
-                if path.name == "review-packet.v2.json" or relative.parts[:2] == ("docs", "review"):
+                if (
+                    path.name == "review-packet.v2.json"
+                    or relative.parts[:2] == ("docs", "review")
+                    or "__pycache__" in relative.parts
+                    or path.suffix in {".pyc", ".pyo"}
+                ):
                     continue
                 authored.append({"path": str(relative), "sha256": file_digest(path)})
     return digest(authored)
@@ -91,6 +130,7 @@ def build_review_packet(
     upstream_lock: dict[str, Any],
     corpus_manifest: dict[str, Any],
     source_digest: str,
+    dependency_lanes: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Bind every identity needed before a reviewer may accept execution."""
 
@@ -99,6 +139,7 @@ def build_review_packet(
         "state_slice": config["state_slice"],
         "config": config,
         "upstream_lock_digest": digest(upstream_lock),
+        "dependency_lanes_digest": None if dependency_lanes is None else digest(dependency_lanes),
         "corpus_manifest_digest": corpus_manifest.get("manifest_digest"),
         "source_digest": source_digest,
     }
@@ -112,6 +153,7 @@ def validate_review_packet(packet: dict[str, Any]) -> None:
         "state_slice",
         "config",
         "upstream_lock_digest",
+        "dependency_lanes_digest",
         "corpus_manifest_digest",
         "source_digest",
         "packet_digest",

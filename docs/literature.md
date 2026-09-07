@@ -15,7 +15,7 @@ synthetic result. No source repository was copied into this clean-room tree.
 | Attribution patching | [Attribution Patching](https://arxiv.org/abs/2404.15255) | Public method context for cheap causal estimates; this project uses a simpler fixed synthetic intervention. |
 | PyTorch tracing | [NNsight](https://github.com/ndif-team/nnsight) | Future model-backed tracing reference; model execution is closed here. |
 | Intervention framework | [pyvene](https://github.com/stanfordnlp/pyvene) | Future interface reference for named interventions; no dependency here. |
-| Gemma feature assets | [Gemma Scope](https://deepmind.google/discover/blog/gemma-scope-open-gemma-2-features-for-circuits-research/) | Asset provenance reference only; no model or feature asset is downloaded. |
+| Gemma feature assets | [Gemma Scope](https://deepmind.google/discover/blog/gemma-scope-open-gemma-2-features-for-circuits-research/) | Historical asset-provenance reference; the integrated slice uses a separately pinned GPT-2 SAE. |
 | Continual-learning regularization | [EWC](https://arxiv.org/abs/1612.00796), [GEM](https://arxiv.org/abs/1706.08840), [LwF](https://arxiv.org/abs/1606.09282) | Conceptual baselines for future stream studies; no claims are made here. |
 | Low-rank adaptation | [LoRA](https://arxiv.org/abs/2106.09685) | Future adapter-control reference; no adapter training is implemented. |
 | Interpretability limitations | [Anthropic attribution-graph methods](https://transformer-circuits.pub/2025/attribution-graphs/methods.html) | Records known gaps: reconstruction dark matter, missing circuits, feature abstraction, and compounding intervention error. |
@@ -43,6 +43,7 @@ identities and license files are machine-readable in
 | Neuronpedia | `df03cfee33e9023866eba6f828d9e34900932877` | Apache-2.0 plus `NOTICE` and `LICENSE-MIT` |
 
 The pinned sources have incompatible dependency lanes: TransformerLens at this
-revision requires Transformers 5.9 or newer, while circuit-tracer caps
-Transformers at 4.57.3. The integrated design isolates those lanes rather than
-claiming a single installable environment.
+revision requires Transformers 5.9 or newer, circuit-tracer requires 4.57.3,
+and ACDC requires Transformers 4.35 with Torch below 2.0. The integrated design
+isolates the modern, circuit-tracer, and ACDC environments rather than claiming
+a single installable environment.

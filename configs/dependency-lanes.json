@@ -7,18 +7,29 @@
       "sources": ["transformerlens", "saelens", "nnsight", "pyvene"],
       "constraints": {
         "python": "3.11.11",
-        "transformers": ">=5.9.0",
-        "torch": ">=2.6"
+        "transformers": "==5.9.0",
+        "torch": "==2.6.0"
       }
     },
-    "legacy_circuit": {
-      "purpose": "circuit-tracer feature graphs and ACDC discovery",
-      "sources": ["circuit-tracer", "acdc"],
+    "circuit_tracer": {
+      "purpose": "circuit-tracer feature graphs and interventions",
+      "sources": ["circuit-tracer", "nnsight", "transformerlens-pypi-legacy"],
       "constraints": {
         "python": "3.11.11",
-        "transformers": ">=4.56.0,<=4.57.3",
+        "transformers": "==4.57.3",
         "nnsight": "==0.6.1",
-        "torch": ">=2.0"
+        "transformer-lens": "==2.16.1",
+        "torch": "==2.0.1"
+      }
+    },
+    "acdc": {
+      "purpose": "automated circuit discovery",
+      "sources": ["acdc", "transformerlens-pypi-legacy"],
+      "constraints": {
+        "python": "3.11.11",
+        "transformers": "==4.35.2",
+        "transformer-lens": "==1.6.1",
+        "torch": "==1.13.1"
       }
     },
     "visualization": {

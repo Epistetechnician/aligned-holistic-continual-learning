@@ -15,6 +15,12 @@ runtime target is Python 3.11.11 and Rust 1.87.0. The source commits and license
 identities for all seven upstream submodules are in
 `third_party/UPSTREAMS.lock.json`.
 
+The modern lane is pinned to Torch 2.6.0 and Transformers 5.9.0. The
+circuit-tracer lane is pinned to Torch 2.0.1, Transformers 4.57.3, NNsight
+0.6.1, and TransformerLens 2.16.1. The ACDC lane is pinned to Torch 1.13.1,
+Transformers 4.35.2, and TransformerLens 1.6.1. These exact versions are
+recorded in `configs/dependency-lanes.json` and in the review packet.
+
 The feature asset is SAELens release
 `gpt2-small-mlp-out-v5-32k`, repository
 `jbloom/GPT2-Small-OAI-v5-32k-mlp-out-SAEs`, layer path
@@ -31,21 +37,24 @@ assessment documents have disjoint authors. The manifest must record the exact
 download URL, normalized bytes hash, tokenizer revision, tokenization policy,
 and owner-only custody path. The corpus bytes never enter Git. The external
 custody manifest currently binds 29 files and has digest
-`767392572ad831d43e19f7a7d3ad485237d2532971233e72cc4b0fbaa281406c`.
+`059babda7993b9cb2625e1acba8c836ff1e2d8539eef9ebac1f10b29e9ba27a1`.
 
 ## Dependency lanes
 
 The upstreams cannot safely be installed as one unconstrained environment.
-The pinned TransformerLens source currently requires Transformers 5.9 or
-newer, while the pinned circuit-tracer source caps Transformers at 4.57.3.
-The monorepo therefore uses isolated lanes and a shared aggregate schema:
+The pinned TransformerLens source requires Transformers 5.9 or newer, while
+circuit-tracer requires Transformers 4.57.3 and ACDC requires Transformers
+4.35 plus Torch below 2.0. The monorepo therefore uses isolated lanes and a
+shared aggregate schema:
 
 - **Modern lane:** TransformerLens bridge, SAELens, NNsight, and pyvene. This
   lane owns activation capture, SAE encode/decode, and representation
   interventions.
-- **Legacy circuit lane:** circuit-tracer and ACDC with their compatible
-  TransformerLens/Transformers constraints. This lane owns attribution graphs
-  and automated circuit discovery.
+- **Circuit-tracer lane:** circuit-tracer with NNsight 0.6.1, TransformerLens
+  2.16.1, Transformers 4.57.3, and Torch 2.0.1. This lane owns feature
+  interventions and attribution graphs.
+- **ACDC lane:** ACDC with TransformerLens 1.6.1, Transformers 4.35.2, and
+  Torch 1.13.1. This lane owns automated circuit discovery.
 - **Visualization lane:** Neuronpedia's local API or static feature URLs. It
   receives aggregate feature metadata only; it is not an evidence authority.
 
@@ -67,6 +76,11 @@ exact-match accuracy, expected calibration error, and a policy-violation rate
 over a predeclared forbidden-token test set. The protected document families
 are measured again after every incoming-task segment. The primary tradeoff is
 incoming-task improvement at a fixed ceiling on protected-family degradation.
+The monitor-controlled policy rejects an update only when the locked predictor
+crosses the retention ceiling without meeting the adaptation floor. The policy
+records applied and skipped counts and fails a trajectory that rejects every
+update. Ordinary fixed updates, EWC, and the behavior-only guard remain
+predeclared comparators.
 
 ## Interpretability measurements
 

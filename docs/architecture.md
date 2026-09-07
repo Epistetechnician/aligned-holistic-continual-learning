@@ -19,10 +19,10 @@ flowchart LR
   K -->|review only| D[Quarantine or admission decision]
 ```
 
-The research boundary is explicit. A future model-backed slice would need a
-fresh corpus and custody manifest, exact runtime and model identities, an
-independent review receipt, and a new claim ceiling. None of those inputs are
-present in this repository.
+The integrated model-backed slice has those identities in the external custody
+root and review packet. Execution remains closed until an independent receipt
+accepts the exact packet, so the repository still publishes only the synthetic
+qualification until that gate is satisfied.
 
 The adapter ports in `src/ahcl/interfaces.py` are the intended consolidation
 point. Activation capture, feature encoding, interventions, and behavior

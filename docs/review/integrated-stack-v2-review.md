@@ -6,7 +6,7 @@ Status: `PENDING_INDEPENDENT_REVIEW`
 
 Current packet: `configs/review-packet.v2.json`
 
-Packet digest: `4e6542589b2b57a52f1840e3d5c4ad4e6183b64dfd589daeea4c695eff1e7068`
+Packet digest: `214fe87b5e6528dea2bce031cda34e8cfd19cd88e720674cce0716b94b8ed3fd`
 
 The packet to review is the exact combination of:
 
@@ -19,10 +19,13 @@ The packet to review is the exact combination of:
   configuration, and custody identities
 
 The reviewer must check source commit identity, license compatibility,
-dependency-lane separation, model and asset hashes, corpus author-disjoint
-splits, retention and custody permissions, evaluator definitions, intervention
-controls, power and multiplicity assumptions, lock ordering, and the claim
-ceiling. The reviewer must return a signed receipt bound to the packet digest.
+dependency-lane separation, exact runtime versions, model and asset hashes,
+corpus author-disjoint splits, retention and custody permissions, evaluator
+definitions, intervention controls, power and multiplicity assumptions, lock
+ordering, and the claim ceiling. The reviewer must return a signed Ed25519
+receipt bound to the packet digest. The execution gate also requires an
+independent verifier callback for that signature; a non-empty string is not
+accepted as proof.
 
 The operator is not an independent reviewer. A local test run, a green CI
 run, or a self-created signature cannot change this record to `ACCEPT`.
