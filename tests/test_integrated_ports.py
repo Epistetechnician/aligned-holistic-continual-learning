@@ -39,7 +39,7 @@ from ahcl.lifecycle import LifecycleError, LockedTrial, TrialRow
 from ahcl.monitor import RidgeMonitor, metrics, shuffled_metrics
 from ahcl.preflight import build_review_packet, validate_dependency_lanes, validate_review_packet
 from ahcl.review import ReviewError, ReviewReceipt, packet_digest, require_independent_accept
-from ahcl.stats import StatisticalPlan, holm_adjust, power_check, validate_locked_study
+from ahcl.stats import StatisticalPlan, achieved_power, holm_adjust, power_check, validate_locked_study
 from ahcl.synthetic import AXES, observations
 
 
@@ -118,7 +118,9 @@ class IntegratedPortTests(unittest.TestCase):
 
     def test_holm_and_power_contract(self):
         self.assertEqual(holm_adjust((0.01, 0.04)), (0.02, 0.04))
-        power_check(StatisticalPlan())
+        plan = StatisticalPlan()
+        power_check(plan)
+        self.assertGreaterEqual(achieved_power(plan), plan.power)
 
     def test_machine_readable_study_lock_is_frozen(self):
         config = json.loads(Path("configs/integrated-stack-v2.json").read_text(encoding="utf-8"))
@@ -189,7 +191,13 @@ class IntegratedPortTests(unittest.TestCase):
             self.assertAlmostEqual(shuffled[str(index)], expected_shuffled[axis])
 
     def test_locked_trial_enforces_phase_order_and_disjoint_cohorts(self):
-        plan = StatisticalPlan(fit_families=2, tune_families=2, assessment_families=2, repeats=2)
+        plan = StatisticalPlan(
+            fit_families=2,
+            tune_families=2,
+            assessment_families=2,
+            repeats=2,
+            power=0.01,
+        )
         config = {"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"}
         trial = LockedTrial(config, plan)
 

@@ -110,10 +110,12 @@ repeats per family. Fit rows select the monitor and any feature candidates.
 Tune rows lock feature maps, layers, thresholds, update hyperparameters, and
 the predictor. Assessment rows are unread until the lock digest exists.
 
-The family-wise alpha is 0.05 with Holm correction. The design target is 0.80
-power at ICC 0.50. Fixed controls are activation-only, text-only, exact-copy
-no-op, shuffled-donor, constant-donor, and matched-donor controls. Missing or
-non-finite rows fail closed; there is no attrition replacement.
+The family-wise alpha is 0.05 with Holm correction. The design declares a
+minimum standardized effect of 0.50 and checks at least 0.80 two-sided normal
+approximation power after the ICC 0.50 design effect for three repeats. Fixed
+controls are activation-only, text-only, exact-copy no-op, shuffled-donor,
+constant-donor, and matched-donor controls. Missing or non-finite rows fail
+closed; there is no attrition replacement.
 
 The machine-readable version of this contract is in the `study` and
 `controls` fields of `configs/integrated-stack-v2.json`. `src/ahcl/lifecycle.py`

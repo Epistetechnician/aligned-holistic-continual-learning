@@ -19,6 +19,8 @@
     "power_target": 0.8,
     "icc_assumption": 0.5,
     "multiplicity": "Holm",
+    "minimum_standardized_effect": 0.5,
+    "power_method": "two_sided_normal_icc_design_effect",
     "missingness": "fail_closed",
     "attrition": "zero",
     "prediction_lock": "fit_predictor_and_tune_thresholds_before_assessment"

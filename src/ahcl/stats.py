@@ -5,7 +5,9 @@ State slice: aligned-holistic-continual-learning-integrated-stack-v2.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
+from statistics import NormalDist
 from typing import Any, Sequence
 
 
@@ -19,6 +21,8 @@ class StatisticalPlan:
     power: float = 0.80
     icc: float = 0.50
     multiplicity: str = "Holm"
+    minimum_effect_size: float = 0.50
+    power_method: str = "two_sided_normal_icc_design_effect"
 
     def as_config(self) -> dict[str, Any]:
         return {
@@ -32,6 +36,8 @@ class StatisticalPlan:
             "power_target": self.power,
             "icc_assumption": self.icc,
             "multiplicity": self.multiplicity,
+            "minimum_standardized_effect": self.minimum_effect_size,
+            "power_method": self.power_method,
         }
 
     def validate(self) -> None:
@@ -90,10 +96,30 @@ def holm_adjust(p_values: Sequence[float]) -> tuple[float, ...]:
     return tuple(adjusted)
 
 
+def achieved_power(plan: StatisticalPlan) -> float:
+    """Compute the locked two-sided normal-approximation power target."""
+
+    design_effect = 1.0 + (plan.repeats - 1) * plan.icc
+    effective_per_arm = min(plan.fit_families, plan.tune_families, plan.assessment_families)
+    effective_per_arm = effective_per_arm * plan.repeats / design_effect
+    noncentrality = plan.minimum_effect_size * (effective_per_arm / 2.0) ** 0.5
+    critical = NormalDist().inv_cdf(1.0 - plan.alpha / 2.0)
+    cdf = lambda value: 0.5 * (1.0 + math.erf(value / (2.0**0.5)))
+    return (1.0 - cdf(critical - noncentrality)) + cdf(-critical - noncentrality)
+
+
 def power_check(plan: StatisticalPlan) -> None:
     if not 0.0 < plan.alpha < 1.0 or not 0.0 < plan.power <= 1.0 or not 0.0 <= plan.icc < 1.0:
         raise ValueError("invalid alpha, power, or ICC")
     if plan.multiplicity != "Holm":
         raise ValueError("only the frozen Holm correction is permitted")
+    if (
+        not math.isfinite(plan.minimum_effect_size)
+        or not 0.0 < plan.minimum_effect_size
+        or plan.power_method != "two_sided_normal_icc_design_effect"
+    ):
+        raise ValueError("invalid frozen power method or effect size")
     if min(plan.fit_families, plan.tune_families, plan.assessment_families, plan.repeats) < 1:
         raise ValueError("all cohort counts must be positive")
+    if achieved_power(plan) < plan.power:
+        raise ValueError("locked cohort does not meet the declared power target")
