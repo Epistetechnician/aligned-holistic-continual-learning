@@ -48,20 +48,35 @@ def reproduce_metrics(
     materialized = tuple(rows)
     if not materialized:
         raise AggregateError("cannot aggregate an empty packet")
+    predictions = tuple(tuple(float(value) for value in predict(row.features)) for row in materialized)
+    return reproduce_metrics_from_predictions(materialized, predictions)
+
+
+def reproduce_metrics_from_predictions(
+    rows: Iterable[AggregateRow],
+    predictions: Iterable[Sequence[float]],
+) -> dict[str, dict[str, float]]:
+    """Recalculate aggregates from predictions already recorded in custody."""
+
+    materialized = tuple(rows)
+    prediction_rows = tuple(tuple(float(value) for value in row) for row in predictions)
+    if not materialized:
+        raise AggregateError("cannot aggregate an empty packet")
+    if len(materialized) != len(prediction_rows):
+        raise AggregateError("row and prediction counts differ")
     width = len(materialized[0].outcomes)
     if width == 0 or any(len(row.outcomes) != width for row in materialized):
         raise AggregateError("outcome axes must have one fixed nonzero width")
-    predictions = tuple(tuple(float(value) for value in predict(row.features)) for row in materialized)
-    if any(len(values) != width for values in predictions):
+    if any(len(values) != width for values in prediction_rows):
         raise AggregateError("predictor output width does not match outcomes")
     if any(not math.isfinite(value) for row in materialized for value in row.outcomes):
         raise AggregateError("outcomes must be finite")
-    if any(not math.isfinite(value) for row in predictions for value in row):
+    if any(not math.isfinite(value) for row in prediction_rows for value in row):
         raise AggregateError("predictions must be finite")
     result: dict[str, dict[str, float]] = {}
     for axis in range(width):
         observed = [row.outcomes[axis] for row in materialized]
-        predicted = [row[axis] for row in predictions]
+        predicted = [row[axis] for row in prediction_rows]
         baseline = [sum(observed) / len(observed)] * len(observed)
         result[str(axis)] = {
             "r2": _r2(observed, predicted),
