@@ -1,0 +1,6 @@
+[project]
+name = "aligned-holistic-continual-learning"
+version = "0.1.0"
+description = "Clean-room synthetic causal-monitor experiment for continual learning"
+requires-python = ">=3.11"
+dependencies = []
