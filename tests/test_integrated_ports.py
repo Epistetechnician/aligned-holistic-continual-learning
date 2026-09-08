@@ -143,6 +143,12 @@ class IntegratedPortTests(unittest.TestCase):
             assert_intervention_reach((0.0,), (0.0,))
         with self.assertRaises(CheckError):
             normalized_reconstruction_mse((math.nan,), (0.0,))
+        with self.assertRaises(CheckError):
+            assert_noop_identity((1.0, 2.0), (1.0,))
+        with self.assertRaises(CheckError):
+            assert_intervention_reach((0.0,), (1.0,), minimum_delta=-1.0)
+        with self.assertRaises(CheckError):
+            normalized_reconstruction_mse((), ())
 
     def test_combined_path_qualification_runs_all_checks(self):
         evidence = qualify_path(
