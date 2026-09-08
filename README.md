@@ -39,6 +39,16 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 cargo test --workspace
 ```
 
+Run the read-only integrated preflight against the external custody root:
+
+```sh
+PYTHONPATH=src python3 -m ahcl.integrated_preflight \
+  --custody-root /Users/shaanp/.codex/custody/ahcl-integrated-stack-v2
+```
+
+It reports `READY_FOR_INDEPENDENT_REVIEW` while leaving model execution
+disabled.
+
 The synthetic status is a local implementation contract. It is not evidence
 of mechanistic understanding, alignment, continual-learning superiority, or
 generalization to a real model.
