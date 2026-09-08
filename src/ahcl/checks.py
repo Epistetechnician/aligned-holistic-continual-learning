@@ -13,6 +13,31 @@ class CheckError(ValueError):
     """Raised when a predeclared intervention or parity check fails."""
 
 
+def _shape(value: Any) -> tuple[int, ...]:
+    if hasattr(value, "shape"):
+        return tuple(value.shape)
+    if isinstance(value, (list, tuple)):
+        shapes = [_shape(item) for item in value]
+        if shapes and any(shape != shapes[0] for shape in shapes):
+            raise CheckError("ragged values are not supported")
+        return (len(value),) + (shapes[0] if shapes else ())
+    return ()
+
+
+def _paired(left: Any, right: Any) -> tuple[list[float], list[float]]:
+    if _shape(left) != _shape(right):
+        raise CheckError("comparison values have different shapes")
+    a, b = list(_flatten(left)), list(_flatten(right))
+    if not a or not all(math.isfinite(v) for v in a + b):
+        raise CheckError("comparison values must be nonempty and finite")
+    return a, b
+
+
+def _threshold(value: float, *, positive: bool = False) -> None:
+    if not math.isfinite(value) or value < 0 or (positive and value == 0):
+        raise CheckError("threshold must be finite and nonnegative (positive for reach)")
+
+
 def _flatten(value: Any) -> Iterable[float]:
     if hasattr(value, "detach"):
         value = value.detach().cpu()
@@ -27,14 +52,12 @@ def _flatten(value: Any) -> Iterable[float]:
 
 
 def max_abs_delta(left: Any, right: Any) -> float:
-    left_values = list(_flatten(left))
-    right_values = list(_flatten(right))
-    if len(left_values) != len(right_values):
-        raise CheckError("comparison values have different sizes")
+    left_values, right_values = _paired(left, right)
     return max((abs(a - b) for a, b in zip(left_values, right_values)), default=0.0)
 
 
 def assert_parity(native: Any, instrumented: Any, *, atol: float = 1e-5) -> float:
+    _threshold(atol)
     delta = max_abs_delta(native, instrumented)
     if not math.isfinite(delta) or delta > atol:
         raise CheckError(f"native/instrumented parity exceeded atol: {delta} > {atol}")
@@ -50,6 +73,7 @@ def assert_noop_identity(base: Any, no_op: Any, *, atol: float = 0.0) -> float:
 
 
 def assert_intervention_reach(base: Any, intervened: Any, *, minimum_delta: float = 1e-6) -> float:
+    _threshold(minimum_delta, positive=True)
     delta = max_abs_delta(base, intervened)
     if not math.isfinite(delta) or delta < minimum_delta:
         raise CheckError(f"intervention did not reach the measured output: {delta}")
@@ -57,10 +81,7 @@ def assert_intervention_reach(base: Any, intervened: Any, *, minimum_delta: floa
 
 
 def normalized_reconstruction_mse(original: Any, reconstructed: Any) -> float:
-    original_values = list(_flatten(original))
-    reconstructed_values = list(_flatten(reconstructed))
-    if len(original_values) != len(reconstructed_values):
-        raise CheckError("reconstruction values have different sizes")
+    original_values, reconstructed_values = _paired(original, reconstructed)
     denominator = sum(value * value for value in original_values)
     numerator = sum((a - b) ** 2 for a, b in zip(original_values, reconstructed_values))
     if not all(math.isfinite(value) for value in original_values + reconstructed_values):
@@ -71,5 +92,6 @@ def normalized_reconstruction_mse(original: Any, reconstructed: Any) -> float:
 
 
 def causal_scrub_effect(clean: Any, scrubbed: Any, *, minimum_delta: float = 1e-6) -> dict[str, float | bool]:
+    _threshold(minimum_delta, positive=True)
     delta = max_abs_delta(clean, scrubbed)
     return {"max_abs_delta": delta, "effect_reached": bool(delta >= minimum_delta)}
