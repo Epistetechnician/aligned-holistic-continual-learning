@@ -258,7 +258,7 @@ def _attest_requirement(requirement: RuntimeRequirement) -> dict[str, Any]:
     files = distribution.files
     if not files:
         raise RuntimeAttestationError(f"runtime distribution has no file manifest: {requirement.distribution}")
-    distribution_root = Path(distribution.locate_file("")).resolve()
+    distribution_root = source_root
     entries = []
     seen: set[str] = set()
     for entry in sorted(files, key=str):
@@ -290,6 +290,7 @@ def _attest_requirement(requirement: RuntimeRequirement) -> dict[str, Any]:
         "distribution": requirement.distribution,
         "version": requirement.version,
         "import_name": requirement.import_name,
+        "files_root": str(distribution_root),
         "module_file": str(module_path.relative_to(source_root)),
         "module_sha256": hashlib.sha256(module_path.read_bytes()).hexdigest(),
         "files": entries,
@@ -400,7 +401,10 @@ def _validate_runtime_payload(
     for name, entry in distributions.items():
         if not isinstance(name, str) or not isinstance(entry, dict):
             raise RuntimeAttestationError("runtime attestation distribution entry is malformed")
-        if set(entry) != {"distribution", "version", "import_name", "module_file", "module_sha256", "files"}:
+        if set(entry) != {
+            "distribution", "version", "import_name", "files_root", "module_file",
+            "module_sha256", "files",
+        }:
             raise RuntimeAttestationError("runtime attestation distribution schema mismatch")
         if (
             entry["distribution"] != name
@@ -410,6 +414,11 @@ def _validate_runtime_payload(
             raise RuntimeAttestationError("runtime attestation distribution identity is malformed")
         if not isinstance(entry["import_name"], str) or not entry["import_name"].strip():
             raise RuntimeAttestationError("runtime attestation import identity is malformed")
+        if not isinstance(entry["files_root"], str) or not Path(entry["files_root"]).is_absolute():
+            raise RuntimeAttestationError("runtime attestation distribution root is malformed")
+        files_root = Path(entry["files_root"]).expanduser()
+        if files_root.is_symlink() or not files_root.is_dir():
+            raise RuntimeAttestationError("runtime attestation distribution root is unavailable")
         if not isinstance(entry["module_file"], str) or not entry["module_file"]:
             raise RuntimeAttestationError("runtime attestation module path is not relative")
         module_file = Path(entry["module_file"])
@@ -448,7 +457,7 @@ def _validate_distribution_bytes(name: str, entry: Mapping[str, Any]) -> None:
     files = distribution.files
     if not files:
         raise RuntimeAttestationError(f"runtime distribution has no file manifest: {name}")
-    distribution_root = Path(distribution.locate_file("")).resolve()
+    distribution_root = Path(entry["files_root"]).expanduser().resolve()
     actual_files = []
     for file_entry in sorted(files, key=str):
         relative, checksum = _regular_file_digest(
@@ -473,6 +482,10 @@ def _validate_distribution_bytes(name: str, entry: Mapping[str, Any]) -> None:
     module_path = raw_module_path.resolve()
     if not module_path.is_file():
         raise RuntimeAttestationError(f"runtime import is not a regular file: {entry['import_name']}")
+    if distribution_root != module_path and distribution_root not in module_path.parents:
+        raise RuntimeAttestationError(f"runtime import escaped its distribution root: {entry['import_name']}")
+    if str(module_path.relative_to(distribution_root)) != entry["module_file"]:
+        raise RuntimeAttestationError(f"runtime import path changed: {entry['import_name']}")
     module_checksum = hashlib.sha256(module_path.read_bytes()).hexdigest()
     if module_checksum != entry["module_sha256"]:
         raise RuntimeAttestationError(f"runtime import bytes changed: {entry['import_name']}")
@@ -611,14 +624,14 @@ def _operator_interpreter(
         resolved = selected.resolve()
         if not resolved.is_file():
             raise RuntimeAttestationError("runtime environment interpreter does not resolve to a file")
-        return resolved, root
+        return selected, root
     raw_interpreter = Path(interpreter).expanduser()
     if not raw_interpreter.is_file():
         raise RuntimeAttestationError("runtime interpreter must be a regular file")
     resolved = raw_interpreter.resolve()
     if not resolved.is_file():
         raise RuntimeAttestationError("runtime interpreter does not resolve to a file")
-    return resolved, None
+    return raw_interpreter, None
 
 
 _CHILD_ATTESTATION = """

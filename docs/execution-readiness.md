@@ -82,10 +82,17 @@ PYTHONPATH=src python3 -m ahcl.runtime_attestation \
 
 The command runs the attestation inside the selected interpreter, hashes its
 installed distribution files and imported module bytes, and emits canonical
-JSON to stdout. Retain those documents in the external review/custody system;
-do not commit them. The integrated preflight also reports the current
-family-wise planning outcome as `NoCandidate`/`unvalidated` until the reviewed
-cohort redesign is adopted.
+JSON to stdout. Each distribution roster is rooted at the selected environment
+so executable files outside `site-packages` are covered too. Retain those
+documents in the external review/custody system; do not commit them. The
+modern lane is attested at
+`2593b1d04d85f2a652f6374eb18c6bc690452fb5bcbcc1a4495326d8bd04ef6e`, and the
+circuit-tracer lane at
+`c5cbd67d3869abbfa29d8d36fd8ed3b23c3644d20d3e65440d7934f1d638ac1e`. The
+ACDC lane remains blocked on this macOS arm64 host because its locked Torch
+1.13.1 requirement has no matching Python 3.11.11 wheel. The integrated
+preflight also reports the current family-wise planning outcome as
+`NoCandidate`/`unvalidated` until the reviewed cohort redesign is adopted.
 
 Before qualification: finish integration through one mandatory launch path;
 freeze checkout and installed runtime bytes; bind model, asset, tokenizer and

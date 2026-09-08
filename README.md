@@ -68,5 +68,6 @@ Holm joint power remains an unresolved review item. NNsight and circuit-tracer
 loaders now require exact caller-supplied local source manifests in addition
 to their existing local model and transcoder custody checks. A launch-time runtime
 attestation implementation covers the pinned interpreter, distribution, and
-imported module bytes, but this host has not produced one for the
-pinned Python 3.11.11 lanes. No model-backed result is reported.
+imported module bytes. Modern and circuit-tracer lane attestations are retained
+outside Git; the ACDC lane remains blocked because Torch 1.13.1 has no matching
+macOS arm64 wheel for Python 3.11.11. No model-backed result is reported.

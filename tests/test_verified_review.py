@@ -86,6 +86,7 @@ class VerificationTests(unittest.TestCase):
                         'distribution':'test',
                         'version':'1.0.0',
                         'import_name':'test',
+                        'files_root': str(Path(sys.executable).resolve().parent.parent),
                         'module_file':'test/__init__.py',
                         'module_sha256':'c'*64,
                         'files':[{'path':'test/__init__.py', 'sha256':'a'*64}],
