@@ -12,13 +12,14 @@ The first model is `openai-community/gpt2` at Hugging Face revision
 `607a30d783dfa663caf39e06633721c8d4cfcd7e`. It is small, ungated, and exposes
 the same causal language-model objective across the selected backends. The
 runtime target is Python 3.11.11 and Rust 1.87.0. The source commits and license
-identities for all seven upstream submodules are in
+identities for all ten upstream submodules are in
 `third_party/UPSTREAMS.lock.json`.
 
 The modern lane is pinned to Torch 2.6.0 and Transformers 5.9.0. The
 circuit-tracer lane is pinned to Torch 2.4.0, Transformers 4.57.3, NNsight
-0.6.1, and TransformerLens 2.16.1. Torch 2.4.0 is required by the pinned
-NNsight release; Torch 2.0.1 would make this lane unsatisfiable. The ACDC lane is pinned to Torch 1.13.1,
+0.6.1, and TransformerLens 2.16.1. It uses the exact NNsight v0.6.1 and
+TransformerLens v2.16.1 submodules. Torch 2.4.0 is required by NNsight;
+Torch 2.0.1 would make this lane unsatisfiable. The ACDC lane is pinned to Torch 1.13.1,
 Transformers 4.35.2, and TransformerLens 1.6.1. These exact versions are
 recorded in `configs/dependency-lanes.json` and in the review packet.
 

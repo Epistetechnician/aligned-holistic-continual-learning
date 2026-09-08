@@ -5,6 +5,12 @@
     "modern": {
       "purpose": "activation capture, SAE encoding, and composable interventions",
       "sources": ["transformerlens", "saelens", "nnsight", "pyvene"],
+      "source_commits": {
+        "transformerlens": "2a05c15df238caf8b7869188ea27b5d39a903d35",
+        "saelens": "ee45e7406165ce267b33d33b7371bbb63ef24db8",
+        "nnsight": "87f4dadaae254c6d36e8820cc83a251623b8dda7",
+        "pyvene": "9e333904dcf9e597ca76170010d17f4d4580de8d"
+      },
       "constraints": {
         "python": "3.11.11",
         "transformers": "==5.9.0",
@@ -13,7 +19,12 @@
     },
     "circuit_tracer": {
       "purpose": "circuit-tracer feature graphs and interventions",
-      "sources": ["circuit-tracer", "nnsight", "transformerlens-pypi-legacy"],
+      "sources": ["circuit-tracer", "nnsight-circuit-tracer-legacy", "transformerlens-circuit-tracer-legacy"],
+      "source_commits": {
+        "circuit-tracer": "6018ed8d35e40f2c50062822e8dde422b8e52e2d",
+        "nnsight-circuit-tracer-legacy": "3fd13f8959cf9bcb79fc87d24bc244bceb26e3e5",
+        "transformerlens-circuit-tracer-legacy": "a634e5757cd2ae43add9beb492be7a2dfb443a30"
+      },
       "constraints": {
         "python": "3.11.11",
         "transformers": "==4.57.3",
@@ -24,7 +35,11 @@
     },
     "acdc": {
       "purpose": "automated circuit discovery",
-      "sources": ["acdc", "transformerlens-pypi-legacy"],
+      "sources": ["acdc", "transformerlens-acdc-legacy"],
+      "source_commits": {
+        "acdc": "bc99ace817974b5584b7ee203d596a8e2bbcd399",
+        "transformerlens-acdc-legacy": "3745d0c18b683cdcdd4b4acf3800f038c2fe8aa7"
+      },
       "constraints": {
         "python": "3.11.11",
         "transformers": "==4.35.2",
@@ -35,6 +50,9 @@
     "visualization": {
       "purpose": "local Neuronpedia feature display and aggregate browsing",
       "sources": ["neuronpedia"],
+      "source_commits": {
+        "neuronpedia": "df03cfee33e9023866eba6f828d9e34900932877"
+      },
       "network": "disabled_until_review"
     }
   },

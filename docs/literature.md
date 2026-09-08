@@ -35,9 +35,12 @@ identities and license files are machine-readable in
 | Source | Pinned commit | License identity |
 | --- | --- | --- |
 | TransformerLens | `2a05c15df238caf8b7869188ea27b5d39a903d35` | MIT, `LICENSE` |
+| TransformerLens circuit-tracer legacy | `a634e5757cd2ae43add9beb492be7a2dfb443a30` | MIT, `LICENSE` |
+| TransformerLens ACDC legacy | `3745d0c18b683cdcdd4b4acf3800f038c2fe8aa7` | MIT, `LICENSE` |
 | SAELens | `ee45e7406165ce267b33d33b7371bbb63ef24db8` | MIT, `LICENSE` |
 | circuit-tracer | `6018ed8d35e40f2c50062822e8dde422b8e52e2d` | MIT, `LICENSE` |
 | NNsight | `87f4dadaae254c6d36e8820cc83a251623b8dda7` | MIT, `LICENSE` |
+| NNsight circuit-tracer legacy | `3fd13f8959cf9bcb79fc87d24bc244bceb26e3e5` | MIT, `LICENSE` |
 | pyvene | `9e333904dcf9e597ca76170010d17f4d4580de8d` | Apache-2.0, `LICENSE` |
 | ACDC | `bc99ace817974b5584b7ee203d596a8e2bbcd399` | MIT, `LICENSE` |
 | Neuronpedia | `df03cfee33e9023866eba6f828d9e34900932877` | Apache-2.0 plus `NOTICE` and `LICENSE-MIT` |

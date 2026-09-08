@@ -41,6 +41,7 @@ from ahcl.preflight import (
     build_review_packet,
     validate_corpus_manifest,
     validate_dependency_lanes,
+    validate_lane_sources,
     validate_review_packet,
 )
 from ahcl.qualification import QualificationThresholds, qualify_path
@@ -88,6 +89,7 @@ class IntegratedPortTests(unittest.TestCase):
         config = json.loads(Path("configs/integrated-stack-v2.json").read_text(encoding="utf-8"))
         digest = validate_dependency_lanes(Path("configs/dependency-lanes.json"), config)
         self.assertEqual(len(digest), 64)
+        validate_lane_sources(Path("configs/dependency-lanes.json"), Path("third_party/UPSTREAMS.lock.json"))
 
     def test_corpus_manifest_is_digest_bound_and_disjoint(self):
         manifest = json.loads(Path("configs/corpus-manifest.v2.json").read_text(encoding="utf-8"))

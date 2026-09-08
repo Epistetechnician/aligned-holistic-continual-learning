@@ -53,10 +53,13 @@
       "acdc_commit": "bc99ace817974b5584b7ee203d596a8e2bbcd399",
       "acdc_torch": "1.13.1",
       "acdc_transformer_lens": "1.6.1",
+      "acdc_transformerlens_commit": "3745d0c18b683cdcdd4b4acf3800f038c2fe8aa7",
       "acdc_transformers": "4.35.2",
       "circuit_tracer_commit": "6018ed8d35e40f2c50062822e8dde422b8e52e2d",
+      "circuit_tracer_nnsight_commit": "3fd13f8959cf9bcb79fc87d24bc244bceb26e3e5",
       "circuit_tracer_torch": "2.4.0",
       "circuit_tracer_transformer_lens": "2.16.1",
+      "circuit_tracer_transformerlens_commit": "a634e5757cd2ae43add9beb492be7a2dfb443a30",
       "circuit_tracer_transformers": "4.57.3",
       "neuronpedia_commit": "df03cfee33e9023866eba6f828d9e34900932877",
       "nnsight_commit": "87f4dadaae254c6d36e8820cc83a251623b8dda7",
@@ -89,10 +92,10 @@
     }
   },
   "corpus_manifest_digest": "5961c550e1f39cbfc4a55e11a7a8f7783c38401357fa6332f6cf88ab298a90c6",
-  "dependency_lanes_digest": "d24e7d92ad9083968b6352fb65b820532268ab95fa2d8d89617d19e2c12de156",
-  "packet_digest": "c5b1934d30dd1fd3ed8e2ece778d3de14c1ebb998eb9eaa35ad795d361027862",
+  "dependency_lanes_digest": "041b7cf479a2f4942198701c14404ee3ba2a6664b7923d0dbe2a1a68941d37e8",
+  "packet_digest": "e5b122508e052f3f5d072171cc9cf6d6ca912d32f83990f458e3662d1d1ee518",
   "schema": "ahcl.review.packet.v1",
-  "source_digest": "37d7102c5996731028702b3c8c1950baba57e51384c67660a1c1f2c4df594a61",
+  "source_digest": "55fc28b33985c4b3bedbb7c79d5a9a803b8850e9ce6ebe1c264482190225fb5f",
   "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
-  "upstream_lock_digest": "a8d9c2021615d01a02da231e01e7a72f9c9eb5db7c6fb5627f41967064ae9b97"
+  "upstream_lock_digest": "c7545c15404b911ca50ae7f00e369bd82e0439ebac81e698dd0d2a75c5536816"
 }

@@ -18,6 +18,7 @@ from .preflight import (
     validate_corpus_manifest,
     validate_dependency_lanes,
     validate_input_bindings,
+    validate_lane_sources,
     validate_review_packet,
     validate_upstream_lock,
 )
@@ -37,6 +38,7 @@ def run_preflight(repo_root: Path, custody_root: Path) -> dict[str, Any]:
     validate_input_bindings(config, manifest)
     corpus_digest = validate_corpus_manifest(corpus_manifest, config=config)
     upstream_digest = validate_upstream_lock(repo_root / "third_party/UPSTREAMS.lock.json")
+    validate_lane_sources(repo_root / "configs/dependency-lanes.json", repo_root / "third_party/UPSTREAMS.lock.json")
     lane_digest = validate_dependency_lanes(repo_root / "configs/dependency-lanes.json", config)
     validate_locked_study(config)
     validate_review_packet(packet)

@@ -19,3 +19,12 @@
 [submodule "third_party/neuronpedia"]
 	path = third_party/neuronpedia
 	url = https://github.com/hijohnnylin/neuronpedia.git
+[submodule "third_party/transformerlens-2.16.1"]
+	path = third_party/transformerlens-2.16.1
+	url = https://github.com/TransformerLensOrg/TransformerLens.git
+[submodule "third_party/transformerlens-1.6.1"]
+	path = third_party/transformerlens-1.6.1
+	url = https://github.com/TransformerLensOrg/TransformerLens.git
+[submodule "third_party/nnsight-0.6.1"]
+	path = third_party/nnsight-0.6.1
+	url = https://github.com/ndif-team/nnsight.git

@@ -67,6 +67,21 @@ def validate_dependency_lanes(lanes_path: Path, config: dict[str, Any]) -> str:
     return digest(lanes)
 
 
+def validate_lane_sources(lanes_path: Path, upstream_lock_path: Path) -> None:
+    """Ensure every lane source name resolves to the exact upstream pin."""
+
+    lanes = json.loads(lanes_path.read_text(encoding="utf-8"))
+    lock = json.loads(upstream_lock_path.read_text(encoding="utf-8"))
+    pinned = {item["name"]: item["commit"] for item in lock.get("submodules", [])}
+    for lane_name, lane in lanes.get("lanes", {}).items():
+        source_commits = lane.get("source_commits", {})
+        if set(source_commits) != set(lane.get("sources", [])):
+            raise PreflightError(f"lane source commit roster mismatch: {lane_name}")
+        for source_name, commit in source_commits.items():
+            if pinned.get(source_name) != commit:
+                raise PreflightError(f"lane source pin mismatch: {lane_name}:{source_name}")
+
+
 def source_tree_digest(root: Path) -> str:
     """Hash the authored source, tests, configs, and protocol records."""
 

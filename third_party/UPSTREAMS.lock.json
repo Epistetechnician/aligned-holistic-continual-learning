@@ -12,6 +12,24 @@
       "role": "activation capture and cache editing"
     },
     {
+      "name": "transformerlens-circuit-tracer-legacy",
+      "path": "third_party/transformerlens-2.16.1",
+      "url": "https://github.com/TransformerLensOrg/TransformerLens.git",
+      "commit": "a634e5757cd2ae43add9beb492be7a2dfb443a30",
+      "license": "MIT",
+      "license_files": ["LICENSE"],
+      "role": "circuit-tracer-compatible TransformerLens 2.16.1 runtime"
+    },
+    {
+      "name": "transformerlens-acdc-legacy",
+      "path": "third_party/transformerlens-1.6.1",
+      "url": "https://github.com/TransformerLensOrg/TransformerLens.git",
+      "commit": "3745d0c18b683cdcdd4b4acf3800f038c2fe8aa7",
+      "license": "MIT",
+      "license_files": ["LICENSE"],
+      "role": "ACDC-compatible TransformerLens 1.6.1 runtime"
+    },
+    {
       "name": "saelens",
       "path": "third_party/saelens",
       "url": "https://github.com/decoderesearch/SAELens.git",
@@ -37,6 +55,15 @@
       "license": "MIT",
       "license_files": ["LICENSE"],
       "role": "local PyTorch tracing and activation intervention"
+    },
+    {
+      "name": "nnsight-circuit-tracer-legacy",
+      "path": "third_party/nnsight-0.6.1",
+      "url": "https://github.com/ndif-team/nnsight.git",
+      "commit": "3fd13f8959cf9bcb79fc87d24bc244bceb26e3e5",
+      "license": "MIT",
+      "license_files": ["LICENSE"],
+      "role": "circuit-tracer-compatible NNsight 0.6.1 runtime"
     },
     {
       "name": "pyvene",
