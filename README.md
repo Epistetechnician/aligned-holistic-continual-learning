@@ -20,7 +20,9 @@ The repository has three bounded layers:
   vendor-neutral adapter ports. The integrated lifecycle and independent
   aggregate calculator are fail-closed until the review gate opens. The
   monitor controller is compared with fixed-update, EWC, and behavioral-guard
-  policies. The public backend registry is quarantined.
+  policies. `research_tracks.py` adds model-free summaries for feature
+  stability, alternative predictors, horizon harm, and selective repair. The
+  public backend registry is quarantined.
 - `crates/admission-core/` contains a dependency-free Rust policy kernel. It
   can quarantine a candidate until independent held-out evidence and a locked
   prediction packet exist.

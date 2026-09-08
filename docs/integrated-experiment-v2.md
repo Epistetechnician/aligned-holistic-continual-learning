@@ -85,6 +85,16 @@ records applied and skipped counts and fails a trajectory that rejects every
 update. Ordinary fixed updates, EWC, and the behavior-only guard remain
 predeclared comparators.
 
+The model-free summaries in `src/ahcl/research_tracks.py` make the remaining
+claims measurable without opening model execution. `feature_stability`
+compares fixed-ID causal-effect vectors across checkpoints without rematching;
+`alternative_predictor_features` supplies hand-calculable gradient, update,
+loss, and representation baselines; `horizon_summary` requires a complete
+ordered checkpoint trajectory and reports cumulative positive harm; and
+`selective_repair` requires measured damage, recovery, and preservation of new
+learning. These functions summarize caller-owned measurements and are not
+scientific evidence by themselves.
+
 ## Interpretability measurements
 
 For the same ordered batch and checkpoint, the modern lane captures named
