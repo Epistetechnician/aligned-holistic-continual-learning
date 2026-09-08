@@ -8,6 +8,7 @@ execution is opened only through :func:`open_model_trial`.
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Mapping
 
@@ -84,7 +85,7 @@ class LockedTrial:
     """Enforce disjoint cohorts and prediction locking without raw retention."""
 
     def __init__(self, config: Mapping[str, Any], plan: StatisticalPlan | None = None):
-        self.config = dict(config)
+        self.config = deepcopy(dict(config))
         self.plan = plan or validate_locked_study(self.config)
         self.plan.validate()
         self._phase = "ready"
@@ -118,7 +119,7 @@ class LockedTrial:
         # Canonical serialization rejects non-finite values and non-JSON data.
         digest(dict(predictor_payload))
         self._predictor = predictor
-        self._predictor_payload = dict(predictor_payload)
+        self._predictor_payload = deepcopy(dict(predictor_payload))
         self._fit_family_ids = tuple(sorted({row.family_id for row in materialized}))
         self._phase = "fit"
 
@@ -163,11 +164,20 @@ class LockedTrial:
     ) -> dict[str, float]:
         if self._phase != "locked":
             raise LifecycleError("assessment requires a completed tune lock")
+        # Consume before reading any assessment iterator or invoking callbacks.
+        # An exception is terminal too: partial assessment cannot be retried.
+        self._phase = "assessment_started"
+        if digest(self.config) != self.prediction_lock.config_digest:
+            raise LifecycleError("configuration changed after prediction locking")
+        if digest(self._predictor_payload) != self.prediction_lock.predictor_digest:
+            raise LifecycleError("predictor payload changed after prediction locking")
         materialized = _phase_rows(rows, "assessment", self.plan)
         assessment_ids = {row.family_id for row in materialized}
         if assessment_ids & (set(self._fit_family_ids) | set(self._tune_family_ids)):
             raise LifecycleError("assessment families must be disjoint from fit and tune")
-        return _summary(evaluate(self._predictor, materialized))
+        summary = _summary(evaluate(self._predictor, materialized))
+        self._phase = "assessed"
+        return summary
 
 
 def open_model_trial(

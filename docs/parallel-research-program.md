@@ -10,9 +10,9 @@ proposal for scientific review, not execution authorization or empirical evidenc
 - [x] Establish current baseline: 27 Python tests pass before this work.
 - [x] Assign measurement, baseline, and independent technical audit ownership.
 - [x] Implement model-free feature, horizon, alternative-input, and repair measurements.
-- [ ] Integrate measurement fixes and resource-budget contract after focused tests.
-- [ ] Record independent rejection findings and remaining execution prerequisites.
-- [ ] Run combined Python/Rust checks and commit only this work's files.
+- [x] Integrate measurement fixes and resource-budget contract after focused tests.
+- [x] Record independent rejection findings and remaining execution prerequisites.
+- [x] Run combined Python/Rust checks; preserve concurrent commits and stage only owned fixes.
 
 The mechanical target is passing adversarial contract tests for all implemented
 measurements, without regressing the baseline. Budget: one implementation pass
@@ -107,3 +107,27 @@ Execution remains closed until the exact protocol, installed runtime, source,
 custody, statistical plan, resource caps, evaluator, and authority verification
 are accepted independently. Unsupported novelty, breakthrough, or general
 alignment claims are prohibited. Negative outcomes remain useful deliverables.
+
+## Integration outcome
+
+Three parallel agents delivered measurement fixes, baseline accounting, and
+an independent technical rejection report. The remaining four tracks have
+explicit protocols and hand-calculable measurement fixtures. No scientific
+experiment ran. The combined suite at integration ran 52 tests, with 50 passing
+and two PyTorch-dependent tests skipped; PyTorch is absent from this interpreter.
+
+Integration fixes reject duplicate document IDs and malformed hashes, reject
+nonfinite Holm inputs, deep-copy configuration/predictor payloads, check those
+identities before assessment access, and consume assessment on success or
+failure. These close portions of audit findings 2, 3, and 8; the audit remains
+a record of its earlier snapshot. Arbitrary executable predictor state is
+still not bound to the declared payload, and re-instantiating a trial is not
+prevented by an external one-use custody service. Content overlap, document
+clustering, multiplicity-aware power, trusted signature verification, loaded
+runtime provenance, local-only loaders, and family-level aggregate reproduction
+remain unresolved. A fresh execution review is required after those repairs.
+
+Concurrent commits were observed during integration. Existing commits and
+unrelated edits were preserved; no external custody or submodule source was
+modified by this parallel pass. The review packet must be rebuilt from a stable
+final checkout before submission; a stale packet cannot authorize execution.
