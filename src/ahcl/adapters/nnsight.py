@@ -5,10 +5,18 @@ State slice: aligned-holistic-continual-learning-integrated-stack-v2.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Sequence
 
 from ..interfaces import ActivationBackend, ActivationRecord
-from .common import optional_import, require_enabled, run_id, tensor_to_tree
+from .common import (
+    optional_import,
+    require_enabled,
+    run_id,
+    tensor_to_tree,
+    validate_imported_module,
+    validate_local_custody_file,
+)
 
 
 def _resolve_path(root: Any, path: str) -> Any:
@@ -32,11 +40,29 @@ class NNsightActivationAdapter(ActivationBackend):
         *,
         device_map: str = "auto",
         dispatch: bool = True,
+        revision: str | None = None,
+        model_root: str | Path | None = None,
+        model_weights_sha256: str | None = None,
+        source_root: str | Path | None = None,
         enabled: bool = False,
     ) -> "NNsightActivationAdapter":
         require_enabled(enabled, "NNsight model execution")
+        if not revision or model_root is None or not model_weights_sha256 or source_root is None:
+            raise RuntimeError("exact model revision, local custody root, weight digest, and source root are required")
         module = optional_import("nnsight", "NNsight")
-        return cls(module.LanguageModel(model_name, device_map=device_map, dispatch=dispatch), model_name)
+        validate_imported_module(module, source_root, "NNsight")
+        transformers = optional_import("transformers", "Transformers")
+        torch = optional_import("torch", "PyTorch")
+        root = Path(model_root).expanduser().resolve()
+        validate_local_custody_file(root / "model.safetensors", model_weights_sha256, "model weights")
+        tokenizer = transformers.AutoTokenizer.from_pretrained(
+            str(root), revision=revision, local_files_only=True
+        )
+        hf_model = transformers.AutoModelForCausalLM.from_pretrained(
+            str(root), revision=revision, local_files_only=True,
+            device_map=device_map, torch_dtype=torch.float32,
+        )
+        return cls(module.LanguageModel(hf_model, tokenizer=tokenizer), model_name)
 
     def capture(self, input_ids: Sequence[Sequence[int]], modules: Sequence[str]) -> tuple[ActivationRecord, ...]:
         if not modules:

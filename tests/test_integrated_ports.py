@@ -19,7 +19,11 @@ from ahcl.adapters import (
     SAELensFeatureAdapter,
     TransformerLensActivationAdapter,
 )
-from ahcl.adapters.common import validate_imported_module, validate_local_custody_file
+from ahcl.adapters.common import (
+    validate_imported_module,
+    validate_local_custody_file,
+    validate_local_custody_tree,
+)
 from ahcl.aggregate import AggregateError, AggregateRow, reproduce_metrics, reproduce_metrics_from_predictions, reproduce_shuffled_r2
 from ahcl.checks import (
     CheckError,
@@ -58,6 +62,7 @@ from ahcl.review import (
 )
 from ahcl.stats import StatisticalPlan, achieved_power, holm_adjust, power_check, validate_locked_study
 from ahcl.synthetic import AXES, observations
+from ahcl.runtime_attestation import RuntimeAttestation, RuntimeAttestationError, validate_runtime_attestation
 
 
 class IntegratedPortTests(unittest.TestCase):
@@ -166,6 +171,63 @@ class IntegratedPortTests(unittest.TestCase):
                 validate_local_custody_file(weights, "0" * 64, "weights")
             with self.assertRaises(RuntimeError):
                 validate_imported_module(json, root, "test module")
+
+    def test_local_custody_tree_has_an_exact_roster(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "config.yaml").write_text("model_kind: transcoder_set\n", encoding="utf-8")
+            (root / "layer_0.safetensors").write_bytes(b"transcoder")
+            expected = {
+                name: hashlib.sha256((root / name).read_bytes()).hexdigest()
+                for name in ("config.yaml", "layer_0.safetensors")
+            }
+            checked = validate_local_custody_tree(root, expected, "transcoder")
+            self.assertEqual(tuple(sorted(path.name for path in checked)), ("config.yaml", "layer_0.safetensors"))
+            (root / "extra.bin").write_bytes(b"extra")
+            with self.assertRaises(RuntimeError):
+                validate_local_custody_tree(root, expected, "transcoder")
+            (root / "extra.bin").unlink()
+            (root / "layer_0.safetensors").write_bytes(b"tampered")
+            with self.assertRaises(RuntimeError):
+                validate_local_custody_tree(root, expected, "transcoder")
+
+    def test_runtime_attestation_schema_is_canonical_and_fail_closed(self):
+        payload = {
+            "schema": "ahcl.runtime.attestation.v1",
+            "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+            "python": "3.11.11",
+            "distributions": {
+                "torch": {
+                    "distribution": "torch",
+                    "version": "2.6.0",
+                    "import_name": "torch",
+                    "module_file": "torch/__init__.py",
+                    "files": [{"path": "torch/__init__.py", "sha256": "a" * 64}],
+                }
+            },
+        }
+        attestation = RuntimeAttestation.from_payload(payload)
+        validate_runtime_attestation(
+            attestation,
+            state_slice="aligned-holistic-continual-learning-integrated-stack-v2",
+            expected_python="3.11.11",
+        )
+        altered = dict(payload)
+        altered["python"] = "3.14.5"
+        with self.assertRaises(RuntimeAttestationError):
+            validate_runtime_attestation(
+                RuntimeAttestation.from_payload(altered),
+                state_slice="aligned-holistic-continual-learning-integrated-stack-v2",
+                expected_python="3.11.11",
+            )
+        malformed = json.loads(json.dumps(payload))
+        malformed["distributions"]["torch"]["files"][0]["sha256"] = "bad"
+        with self.assertRaises(RuntimeAttestationError):
+            validate_runtime_attestation(
+                RuntimeAttestation.from_payload(malformed),
+                state_slice="aligned-holistic-continual-learning-integrated-stack-v2",
+                expected_python="3.11.11",
+            )
 
     def test_review_packet_digest_is_bound(self):
         packet = build_review_packet(
@@ -439,6 +501,23 @@ class IntegratedPortTests(unittest.TestCase):
         config = {"execution": {"enabled": False}}
         with self.assertRaises(ExecutionClosed):
             require_execution_open(config, None, packet_digest="packet", operator_id="operator")
+
+    def test_enabled_execution_requires_verified_runtime_attestation(self):
+        config = {
+            "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+            "execution": {"enabled": True},
+            "runtime": {"python": "3.11.11"},
+        }
+        packet = {"config": config}
+        receipt = ReviewReceipt(packet_digest(packet), "reviewer", "ACCEPT", "signature", public_key_id="key")
+        with self.assertRaisesRegex(ExecutionClosed, "runtime distribution attestation"):
+            require_execution_open(
+                config,
+                receipt,
+                packet_digest=packet_digest(packet),
+                reviewed_packet=packet,
+                operator_id="operator",
+            )
 
 
 if __name__ == "__main__":

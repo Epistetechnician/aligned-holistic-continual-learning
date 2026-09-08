@@ -58,6 +58,7 @@ generalization to a real model.
 
 The integrated packet is currently `READY_FOR_INDEPENDENT_REVIEW`, with
 execution disabled. Its declared power is a single-comparison approximation;
-Holm joint power, runtime distribution attestation, and local-byte custody
-for the remaining NNsight and circuit-tracer paths are unresolved review
-items. No model-backed result is reported.
+Holm joint power and local-byte custody for the remaining NNsight and
+circuit-tracer paths are unresolved review items. A launch-time runtime
+attestation implementation exists, but this host has not produced one for the
+pinned Python 3.11.11 lanes. No model-backed result is reported.

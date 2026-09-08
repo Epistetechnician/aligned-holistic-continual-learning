@@ -8,7 +8,7 @@ from __future__ import annotations
 import importlib
 import hashlib
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 
 class OptionalDependencyError(RuntimeError):
@@ -59,6 +59,50 @@ def validate_imported_module(module: Any, source_root: str | Path, label: str) -
     if root not in module_path.parents:
         raise RuntimeError(f"{label} resolved outside its pinned checkout")
     return module_path
+
+
+def validate_local_custody_tree(root: str | Path, expected_files: Mapping[str, str], label: str) -> tuple[Path, ...]:
+    """Require an exact regular-file roster and digest map below one custody directory."""
+
+    raw_root = Path(root).expanduser()
+    if raw_root.is_symlink() or not raw_root.is_dir():
+        raise RuntimeError(f"{label} custody root must be a real directory")
+    custody_root = raw_root.resolve()
+    if not expected_files:
+        raise RuntimeError(f"{label} custody roster must be non-empty")
+    normalized: dict[str, str] = {}
+    for relative, checksum in expected_files.items():
+        if (
+            not isinstance(relative, str)
+            or not isinstance(checksum, str)
+        ):
+            raise RuntimeError(f"{label} custody roster contains an invalid path or digest")
+        relative_path = Path(relative)
+        if (
+            relative_path.is_absolute()
+            or ".." in relative_path.parts
+            or not relative_path.parts
+            or len(checksum) != 64
+            or any(character not in "0123456789abcdef" for character in checksum)
+        ):
+            raise RuntimeError(f"{label} custody roster contains an invalid path or digest")
+        normalized[str(relative_path)] = checksum
+    actual: dict[str, Path] = {}
+    for candidate in custody_root.rglob("*"):
+        if candidate.is_symlink():
+            raise RuntimeError(f"{label} custody tree contains a symlink")
+        if candidate.is_file():
+            actual[str(candidate.relative_to(custody_root))] = candidate
+    if set(actual) != set(normalized):
+        raise RuntimeError(f"{label} custody file roster does not match the locked roster")
+    checked: list[Path] = []
+    for relative, checksum in sorted(normalized.items()):
+        candidate = actual[relative]
+        actual_checksum = hashlib.sha256(candidate.read_bytes()).hexdigest()
+        if actual_checksum != checksum:
+            raise RuntimeError(f"{label} custody digest does not match for {relative}")
+        checked.append(candidate.resolve())
+    return tuple(checked)
 
 
 def tensor_to_tree(value: Any) -> Any:

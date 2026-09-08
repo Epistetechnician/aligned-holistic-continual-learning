@@ -9,6 +9,7 @@ from typing import Any, Mapping
 
 from .canonical import digest
 from .review import Ed25519Verifier, ReviewReceipt, require_independent_accept
+from .runtime_attestation import RuntimeAttestation, RuntimeAttestationError, validate_runtime_attestation
 
 
 class ExecutionClosed(RuntimeError):
@@ -22,6 +23,7 @@ def require_execution_open(
     packet_digest: str,
     reviewed_packet: Mapping[str, Any] | None = None,
     operator_id: str,
+    runtime_attestation: RuntimeAttestation | None = None,
     verify_signature: Ed25519Verifier | None = None,
     trusted_public_key_ids: frozenset[str] | None = None,
 ) -> None:
@@ -33,6 +35,14 @@ def require_execution_open(
         raise ExecutionClosed("the exact reviewed packet is required at launch")
     if reviewed_packet.get("config") != config:
         raise ExecutionClosed("launch config does not match the reviewed packet")
+    try:
+        validate_runtime_attestation(
+            runtime_attestation,
+            state_slice=config.get("state_slice", ""),
+            expected_python=config.get("runtime", {}).get("python", ""),
+        )
+    except RuntimeAttestationError as error:
+        raise ExecutionClosed("verified runtime distribution attestation is required at launch") from error
     require_independent_accept(
         receipt,
         expected_packet_digest=packet_digest,

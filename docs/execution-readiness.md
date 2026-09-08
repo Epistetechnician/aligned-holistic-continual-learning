@@ -59,10 +59,11 @@ packages still do not match the configured runtime lane.
 Before qualification: finish integration through one mandatory launch path;
 freeze checkout and installed runtime bytes; bind model, asset, tokenizer and
 fresh family roster; fix independent unit, contrasts, effect assumptions and
-numeric resource caps; obtain externally provisioned reviewer trust and signed
-acceptance. Only then execute offline parity/repeat/no-op/reach and
-reconstruction qualification. A failure closes that qualification without
-threshold or asset shopping. Fit/tune/assessment remain downstream.
+numeric resource caps; run `ahcl.runtime_attestation` in each selected pinned
+lane; obtain externally provisioned reviewer trust and signed acceptance. Only
+then execute offline parity/repeat/no-op/reach and reconstruction
+qualification. A failure closes that qualification without threshold or asset
+shopping. Fit/tune/assessment remain downstream.
 
 An independent Luna agent produced `review/luna-readiness-audit.md`; that is a
 technical snapshot and must not be represented as an external signed ACCEPT.

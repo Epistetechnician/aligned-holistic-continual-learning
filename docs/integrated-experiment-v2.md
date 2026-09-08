@@ -66,8 +66,11 @@ shared aggregate schema:
 The adapters in `src/ahcl/adapters/` prevent these lanes from sharing Python
 module state. Model and SAE loading requires an exact revision, a caller-owned
 local custody root, a matching weight digest, and an imported module location
-inside the pinned checkout. Trial packets exchange canonical IDs, tensors
-during one run, and aggregate metrics after validation.
+inside the pinned checkout. `ahcl.runtime_attestation` hashes every installed
+distribution file and binds imported module locations to the selected lane;
+the execution gate rejects an enabled packet without that attestation. Trial
+packets exchange canonical IDs, tensors during one run, and aggregate metrics
+after validation.
 
 ## Update and behavior endpoints
 

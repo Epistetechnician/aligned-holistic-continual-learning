@@ -10,6 +10,7 @@ from ahcl.canonical import digest
 from ahcl.verified_review import TrustedReviewer, signed_message, verify_launch_receipt
 from ahcl.sealed_predictor import SealedLinearPredictor
 from ahcl.assessment_boundary import assess_once
+from ahcl.runtime_attestation import RuntimeAttestation
 
 
 class VerificationTests(unittest.TestCase):
@@ -54,7 +55,11 @@ class VerificationTests(unittest.TestCase):
 
     def test_boundary_consumes_failed_callback_and_binds_predictor(self):
         predictor = SealedLinearPredictor([[2.]],[1.])
-        self.packet['config'].update(execution={'enabled':True}, assessment={'predictor_digest':predictor.identity})
+        self.packet['config'].update(
+            execution={'enabled':True},
+            assessment={'predictor_digest':predictor.identity},
+            runtime={'python':'3.11.11'},
+        )
         self.packet['packet_digest'] = digest({k:v for k,v in self.packet.items() if k != 'packet_digest'})
         self.receipt.update(packet_digest=self.packet['packet_digest'], purpose='assessment')
         self.receipt['signature'] = self.key.sign(signed_message(self.packet['packet_digest'],'reviewer','test','assessment')).hex()
@@ -65,9 +70,23 @@ class VerificationTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             root = Path(directory)
             root.chmod(0o700)
+            runtime_attestation = RuntimeAttestation.from_payload({
+                'schema':'ahcl.runtime.attestation.v1',
+                'state_slice':'test',
+                'python':'3.11.11',
+                'distributions': {
+                    'test': {
+                        'distribution':'test',
+                        'version':'1.0.0',
+                        'import_name':'test',
+                        'module_file':'test/__init__.py',
+                        'files':[{'path':'test/__init__.py', 'sha256':'a'*64}],
+                    }
+                },
+            })
             kwargs = dict(packet=self.packet, config=self.packet['config'], receipt=self.receipt,
                           registry=self.registry, operator_id='operator', custody_root=root,
-                          predictor=predictor, evaluate=fail)
+                          predictor=predictor, evaluate=fail, runtime_attestation=runtime_attestation)
             with self.assertRaises(RuntimeError): assess_once(**kwargs)
             with self.assertRaises(ValueError): assess_once(**kwargs)
             self.assertEqual(called,[predictor.identity])
