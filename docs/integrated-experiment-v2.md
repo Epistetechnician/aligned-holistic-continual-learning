@@ -16,8 +16,9 @@ identities for all seven upstream submodules are in
 `third_party/UPSTREAMS.lock.json`.
 
 The modern lane is pinned to Torch 2.6.0 and Transformers 5.9.0. The
-circuit-tracer lane is pinned to Torch 2.0.1, Transformers 4.57.3, NNsight
-0.6.1, and TransformerLens 2.16.1. The ACDC lane is pinned to Torch 1.13.1,
+circuit-tracer lane is pinned to Torch 2.4.0, Transformers 4.57.3, NNsight
+0.6.1, and TransformerLens 2.16.1. Torch 2.4.0 is required by the pinned
+NNsight release; Torch 2.0.1 would make this lane unsatisfiable. The ACDC lane is pinned to Torch 1.13.1,
 Transformers 4.35.2, and TransformerLens 1.6.1. These exact versions are
 recorded in `configs/dependency-lanes.json` and in the review packet.
 
@@ -51,7 +52,7 @@ shared aggregate schema:
   lane owns activation capture, SAE encode/decode, and representation
   interventions.
 - **Circuit-tracer lane:** circuit-tracer with NNsight 0.6.1, TransformerLens
-  2.16.1, Transformers 4.57.3, and Torch 2.0.1. This lane owns feature
+  2.16.1, Transformers 4.57.3, and Torch 2.4.0. This lane owns feature
   interventions and attribution graphs.
 - **ACDC lane:** ACDC with TransformerLens 1.6.1, Transformers 4.35.2, and
   Torch 1.13.1. This lane owns automated circuit discovery.
