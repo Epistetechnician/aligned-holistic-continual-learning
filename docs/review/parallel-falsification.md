@@ -143,9 +143,11 @@ Findings 4 and 6 remain open. Finding 7 is partially resolved: the
 TransformerLens and SAELens adapters now require a caller-supplied source
 checkout, exact revision, local custody root, and weight digest before loading;
 the NNsight and circuit-tracer model paths still require the same local-byte
-boundary. `runtime_attestation.py` now hashes installed distribution files and
-the execution gate requires its canonical evidence, but this host has not
-produced an attestation for the pinned Python 3.11.11 lanes. The declared
-power is still a single-comparison approximation. Model execution and
+boundary. `runtime_attestation.py` now hashes the resolved interpreter,
+installed distribution files, and imported module bytes, and the execution
+gate requires its canonical evidence, but this host has not produced an
+attestation for the pinned Python
+3.11.11 lanes. The declared power is still a single-comparison approximation.
+Model execution and
 assessment remain closed until those items receive a fresh independent review
 of the exact final bytes.

@@ -60,5 +60,6 @@ The integrated packet is currently `READY_FOR_INDEPENDENT_REVIEW`, with
 execution disabled. Its declared power is a single-comparison approximation;
 Holm joint power and local-byte custody for the remaining NNsight and
 circuit-tracer paths are unresolved review items. A launch-time runtime
-attestation implementation exists, but this host has not produced one for the
+attestation implementation covers the pinned interpreter, distribution, and
+imported module bytes, but this host has not produced one for the
 pinned Python 3.11.11 lanes. No model-backed result is reported.

@@ -60,7 +60,9 @@ Before qualification: finish integration through one mandatory launch path;
 freeze checkout and installed runtime bytes; bind model, asset, tokenizer and
 fresh family roster; fix independent unit, contrasts, effect assumptions and
 numeric resource caps; run `ahcl.runtime_attestation` in each selected pinned
-lane; obtain externally provisioned reviewer trust and signed acceptance. Only
+lane, including the resolved interpreter, distribution, and imported module
+bytes; obtain
+externally provisioned reviewer trust and signed acceptance. Only
 then execute offline parity/repeat/no-op/reach and reconstruction
 qualification. A failure closes that qualification without threshold or asset
 shopping. Fit/tune/assessment remain downstream.

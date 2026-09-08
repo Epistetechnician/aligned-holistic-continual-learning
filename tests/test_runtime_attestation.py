@@ -28,12 +28,14 @@ def valid_payload() -> dict:
         "schema": "ahcl.runtime.attestation.v1",
         "state_slice": STATE_SLICE,
         "python": "3.11.11",
+        "interpreter": {"path": "/opt/python/bin/python3.11", "sha256": "b" * 64},
         "distributions": {
             "example": {
                 "distribution": "example",
                 "version": "1.2.3",
                 "import_name": "example",
                 "module_file": "example/__init__.py",
+                "module_sha256": "c" * 64,
                 "files": [{"path": "example/__init__.py", "sha256": "a" * 64}],
             }
         },
@@ -48,6 +50,8 @@ class RuntimeAttestationTests(unittest.TestCase):
             package.mkdir()
             module_file = package / "__init__.py"
             module_file.write_bytes(b"example-runtime")
+            interpreter = root / "python3.11"
+            interpreter.write_bytes(b"python-runtime")
             metadata = root / "example-1.2.3.dist-info"
             metadata.mkdir()
             metadata_file = metadata / "METADATA"
@@ -64,6 +68,8 @@ class RuntimeAttestationTests(unittest.TestCase):
             module = SimpleNamespace(__file__=str(module_file))
             requirement = RuntimeRequirement("example", "example", "1.2.3", root)
             with patch("ahcl.runtime_attestation.platform.python_version", return_value="3.11.11"), patch(
+                "ahcl.runtime_attestation.sys.executable", str(interpreter)
+            ), patch(
                 "ahcl.runtime_attestation.importlib.metadata.distribution", return_value=Distribution()
             ), patch("ahcl.runtime_attestation.importlib.import_module", return_value=module):
                 attestation = attest_runtime(
@@ -73,6 +79,15 @@ class RuntimeAttestationTests(unittest.TestCase):
                 )
 
             self.assertEqual(attestation.payload["python"], "3.11.11")
+            self.assertEqual(attestation.payload["interpreter"]["path"], str(interpreter.resolve()))
+            self.assertEqual(
+                attestation.payload["interpreter"]["sha256"],
+                hashlib.sha256(interpreter.read_bytes()).hexdigest(),
+            )
+            self.assertEqual(
+                attestation.payload["distributions"]["example"]["module_sha256"],
+                hashlib.sha256(module_file.read_bytes()).hexdigest(),
+            )
             self.assertEqual(attestation.payload["distributions"]["example"]["version"], "1.2.3")
             files = attestation.payload["distributions"]["example"]["files"]
             self.assertEqual(
@@ -144,6 +159,17 @@ class RuntimeAttestationTests(unittest.TestCase):
                         expected_python="3.11.11",
                         requirements=(RuntimeRequirement("example", "example", "1.2.3", root),),
                     )
+
+    def test_missing_interpreter_is_rejected(self):
+        with patch("ahcl.runtime_attestation.platform.python_version", return_value="3.11.11"), patch(
+            "ahcl.runtime_attestation.sys.executable", "/missing/python3.11"
+        ):
+            with self.assertRaisesRegex(RuntimeAttestationError, "interpreter"):
+                attest_runtime(
+                    state_slice=STATE_SLICE,
+                    expected_python="3.11.11",
+                    requirements=(RuntimeRequirement("example", "example", "1.2.3", Path(".")),),
+                )
 
 
 if __name__ == "__main__":

@@ -196,12 +196,14 @@ class IntegratedPortTests(unittest.TestCase):
             "schema": "ahcl.runtime.attestation.v1",
             "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
             "python": "3.11.11",
+            "interpreter": {"path": "/opt/python/bin/python3.11", "sha256": "b" * 64},
             "distributions": {
                 "torch": {
                     "distribution": "torch",
                     "version": "2.6.0",
                     "import_name": "torch",
                     "module_file": "torch/__init__.py",
+                    "module_sha256": "c" * 64,
                     "files": [{"path": "torch/__init__.py", "sha256": "a" * 64}],
                 }
             },

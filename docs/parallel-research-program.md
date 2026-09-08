@@ -129,8 +129,8 @@ SAELens adapters require local, digest-checked inputs and pinned checkout
 locations. A conservative document-level power planner records the gap
 between single-comparison power and Holm joint power; the current six-document
 per-split panel remains a design blocker. The runtime-attestation helper now
-binds distribution bytes, and the NNsight and circuit-tracer adapters enforce
-local-byte custody. The required Python 3.11.11 environments and model/feature
+binds interpreter, distribution, and imported module bytes. The NNsight and
+circuit-tracer adapters enforce local-byte custody. The required Python 3.11.11 environments and model/feature
 bytes are still absent on this host, so no launch attestation has been
 produced. A fresh execution review is required after those inputs are
 available.

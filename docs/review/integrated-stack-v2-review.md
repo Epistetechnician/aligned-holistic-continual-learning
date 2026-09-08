@@ -6,7 +6,7 @@ Status: `PENDING_INDEPENDENT_REVIEW`
 
 Current packet: `configs/review-packet.v2.json`
 
-Packet digest: `d06574e1db8c51e1639cf2473c159d6e12a16afd6128727a5aa826cd62b1789f`
+Packet digest: `de92c4a75f57257314e5e8317e9b89bd057741ad342d96a31ad38ec02a777674`
 
 The packet to review is the exact combination of:
 

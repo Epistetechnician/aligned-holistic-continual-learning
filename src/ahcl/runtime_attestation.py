@@ -1,18 +1,21 @@
 """Launch-time attestation for isolated Python dependency lanes.
 
 State slice: aligned-holistic-continual-learning-integrated-stack-v2.
-This module records exact distribution versions, installed file bytes, and
-imported module locations. It never downloads packages or models.
+This module records exact interpreter bytes, distribution versions, installed
+file bytes, and imported module locations and bytes. It never downloads
+packages or models.
 """
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import importlib
 import importlib.metadata
 import json
 import platform
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -35,7 +38,7 @@ class RuntimeRequirement:
     distribution: str
     import_name: str
     version: str
-    source_root: Path
+    source_root: str | Path
 
 
 @dataclass(frozen=True)
@@ -77,6 +80,19 @@ def _regular_file_digest(path: Path, *, root: Path, label: str) -> tuple[str, st
     return str(resolved.relative_to(root)), hashlib.sha256(resolved.read_bytes()).hexdigest()
 
 
+def _interpreter_identity() -> dict[str, str]:
+    """Return the resolved interpreter path and bytes digest for this process."""
+
+    raw = Path(sys.executable).expanduser()
+    resolved = raw.resolve()
+    if not resolved.is_file():
+        raise RuntimeAttestationError("Python interpreter must be an existing regular file")
+    return {
+        "path": str(resolved),
+        "sha256": hashlib.sha256(resolved.read_bytes()).hexdigest(),
+    }
+
+
 def _attest_requirement(requirement: RuntimeRequirement) -> dict[str, Any]:
     if not isinstance(requirement, RuntimeRequirement):
         raise RuntimeAttestationError("runtime requirement must be a RuntimeRequirement")
@@ -84,7 +100,7 @@ def _attest_requirement(requirement: RuntimeRequirement) -> dict[str, Any]:
         not isinstance(requirement.distribution, str)
         or not isinstance(requirement.import_name, str)
         or not isinstance(requirement.version, str)
-        or not isinstance(requirement.source_root, Path)
+        or not isinstance(requirement.source_root, (str, Path))
         or not requirement.distribution.strip()
         or not requirement.import_name.strip()
         or not _VERSION.fullmatch(requirement.version)
@@ -126,14 +142,20 @@ def _attest_requirement(requirement: RuntimeRequirement) -> dict[str, Any]:
     location = getattr(module, "__file__", None)
     if not isinstance(location, str):
         raise RuntimeAttestationError(f"runtime import has no file: {requirement.import_name}")
-    module_path = Path(location).resolve()
+    module_raw = Path(location)
+    if module_raw.is_symlink():
+        raise RuntimeAttestationError(f"runtime import is a symlink: {requirement.import_name}")
+    module_path = module_raw.resolve()
     if source_root != module_path and source_root not in module_path.parents:
         raise RuntimeAttestationError(f"runtime import escaped pinned source root: {requirement.import_name}")
+    if not module_path.is_file():
+        raise RuntimeAttestationError(f"runtime import is not a regular file: {requirement.import_name}")
     return {
         "distribution": requirement.distribution,
         "version": requirement.version,
         "import_name": requirement.import_name,
         "module_file": str(module_path.relative_to(source_root)),
+        "module_sha256": hashlib.sha256(module_path.read_bytes()).hexdigest(),
         "files": entries,
     }
 
@@ -159,6 +181,7 @@ def attest_runtime(
         )
     if not requirements:
         raise RuntimeAttestationError("at least one runtime distribution is required")
+    interpreter = _interpreter_identity()
     distributions = [_attest_requirement(requirement) for requirement in requirements]
     names = [entry["distribution"] for entry in distributions]
     if len(set(names)) != len(names):
@@ -167,6 +190,7 @@ def attest_runtime(
         "schema": "ahcl.runtime.attestation.v1",
         "state_slice": state_slice,
         "python": expected_python,
+        "interpreter": interpreter,
         "distributions": {entry["distribution"]: entry for entry in distributions},
     }
     return RuntimeAttestation.from_payload(payload)
@@ -183,7 +207,7 @@ def validate_runtime_attestation(
     if not isinstance(attestation, RuntimeAttestation):
         raise RuntimeAttestationError("a RuntimeAttestation produced by attest_runtime is required")
     payload = attestation.payload
-    if set(payload) != {"schema", "state_slice", "python", "distributions"}:
+    if set(payload) != {"schema", "state_slice", "python", "interpreter", "distributions"}:
         raise RuntimeAttestationError("runtime attestation schema mismatch")
     if (
         not isinstance(state_slice, str)
@@ -200,13 +224,23 @@ def validate_runtime_attestation(
         or not _VERSION.fullmatch(expected_python)
     ):
         raise RuntimeAttestationError("runtime attestation Python identity mismatch")
+    interpreter = payload["interpreter"]
+    if not isinstance(interpreter, dict) or set(interpreter) != {"path", "sha256"}:
+        raise RuntimeAttestationError("runtime attestation interpreter identity is malformed")
+    if not isinstance(interpreter["path"], str) or not interpreter["path"]:
+        raise RuntimeAttestationError("runtime attestation interpreter path is malformed")
+    interpreter_path = Path(interpreter["path"])
+    if not interpreter_path.is_absolute() or ".." in interpreter_path.parts:
+        raise RuntimeAttestationError("runtime attestation interpreter path is malformed")
+    if not isinstance(interpreter["sha256"], str) or not _SHA256.fullmatch(interpreter["sha256"]):
+        raise RuntimeAttestationError("runtime attestation interpreter hash is malformed")
     distributions = payload["distributions"]
     if not isinstance(distributions, dict) or not distributions:
         raise RuntimeAttestationError("runtime attestation distribution roster is empty")
     for name, entry in distributions.items():
         if not isinstance(name, str) or not isinstance(entry, dict):
             raise RuntimeAttestationError("runtime attestation distribution entry is malformed")
-        if set(entry) != {"distribution", "version", "import_name", "module_file", "files"}:
+        if set(entry) != {"distribution", "version", "import_name", "module_file", "module_sha256", "files"}:
             raise RuntimeAttestationError("runtime attestation distribution schema mismatch")
         if (
             entry["distribution"] != name
@@ -216,11 +250,13 @@ def validate_runtime_attestation(
             raise RuntimeAttestationError("runtime attestation distribution identity is malformed")
         if not isinstance(entry["import_name"], str) or not entry["import_name"].strip():
             raise RuntimeAttestationError("runtime attestation import identity is malformed")
-        if not isinstance(entry["module_file"], str):
+        if not isinstance(entry["module_file"], str) or not entry["module_file"]:
             raise RuntimeAttestationError("runtime attestation module path is not relative")
         module_file = Path(entry["module_file"])
         if module_file.is_absolute() or ".." in module_file.parts:
             raise RuntimeAttestationError("runtime attestation module path is not relative")
+        if not isinstance(entry["module_sha256"], str) or not _SHA256.fullmatch(entry["module_sha256"]):
+            raise RuntimeAttestationError("runtime attestation module hash is malformed")
         files = entry["files"]
         if not isinstance(files, list) or not files:
             raise RuntimeAttestationError("runtime attestation file roster is empty")
@@ -228,10 +264,10 @@ def validate_runtime_attestation(
         for file_entry in files:
             if not isinstance(file_entry, dict) or set(file_entry) != {"path", "sha256"}:
                 raise RuntimeAttestationError("runtime attestation file entry schema mismatch")
-            if not isinstance(file_entry["path"], str):
+            if not isinstance(file_entry["path"], str) or not file_entry["path"]:
                 raise RuntimeAttestationError("runtime attestation file path is malformed")
             path = Path(file_entry["path"])
-            if path.is_absolute() or ".." in path.parts or str(path) in seen:
+            if path.is_absolute() or not path.parts or ".." in path.parts or str(path) in seen:
                 raise RuntimeAttestationError("runtime attestation file path is malformed")
             if not isinstance(file_entry["sha256"], str) or not _SHA256.fullmatch(file_entry["sha256"]):
                 raise RuntimeAttestationError("runtime attestation file hash is malformed")
@@ -245,3 +281,42 @@ __all__ = [
     "attest_runtime",
     "validate_runtime_attestation",
 ]
+
+
+def _parse_requirement(raw: str) -> RuntimeRequirement:
+    parts = raw.split(",", 3)
+    if len(parts) != 4:
+        raise RuntimeAttestationError(
+            "--requirement must be DISTRIBUTION,IMPORT_NAME,VERSION,SOURCE_ROOT"
+        )
+    distribution, import_name, version, source_root = parts
+    return RuntimeRequirement(distribution, import_name, version, Path(source_root))
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Emit one canonical runtime attestation document as JSON."""
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--state-slice", required=True)
+    parser.add_argument("--expected-python", required=True)
+    parser.add_argument(
+        "--requirement",
+        action="append",
+        required=True,
+        metavar="DISTRIBUTION,IMPORT_NAME,VERSION,SOURCE_ROOT",
+    )
+    args = parser.parse_args(argv)
+    try:
+        attestation = attest_runtime(
+            state_slice=args.state_slice,
+            expected_python=args.expected_python,
+            requirements=tuple(_parse_requirement(raw) for raw in args.requirement),
+        )
+    except RuntimeAttestationError as error:
+        parser.error(str(error))
+    print(json.dumps(attestation.document(), sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

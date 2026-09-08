@@ -74,12 +74,14 @@ class VerificationTests(unittest.TestCase):
                 'schema':'ahcl.runtime.attestation.v1',
                 'state_slice':'test',
                 'python':'3.11.11',
+                'interpreter': {'path':'/opt/python/bin/python3.11', 'sha256':'b'*64},
                 'distributions': {
                     'test': {
                         'distribution':'test',
                         'version':'1.0.0',
                         'import_name':'test',
                         'module_file':'test/__init__.py',
+                        'module_sha256':'c'*64,
                         'files':[{'path':'test/__init__.py', 'sha256':'a'*64}],
                     }
                 },
