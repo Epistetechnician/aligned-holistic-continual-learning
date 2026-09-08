@@ -234,6 +234,9 @@ def validate_runtime_attestation(
         raise RuntimeAttestationError("runtime attestation interpreter path is malformed")
     if not isinstance(interpreter["sha256"], str) or not _SHA256.fullmatch(interpreter["sha256"]):
         raise RuntimeAttestationError("runtime attestation interpreter hash is malformed")
+    current_interpreter = _interpreter_identity()
+    if interpreter != current_interpreter:
+        raise RuntimeAttestationError("runtime attestation interpreter does not match this process")
     distributions = payload["distributions"]
     if not isinstance(distributions, dict) or not distributions:
         raise RuntimeAttestationError("runtime attestation distribution roster is empty")

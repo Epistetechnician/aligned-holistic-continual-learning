@@ -5,6 +5,7 @@ State slice: aligned-holistic-continual-learning-integrated-stack-v2.
 
 import hashlib
 import json
+import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -24,11 +25,15 @@ STATE_SLICE = "aligned-holistic-continual-learning-integrated-stack-v2"
 
 
 def valid_payload() -> dict:
+    interpreter = Path(sys.executable).resolve()
     return {
         "schema": "ahcl.runtime.attestation.v1",
         "state_slice": STATE_SLICE,
         "python": "3.11.11",
-        "interpreter": {"path": "/opt/python/bin/python3.11", "sha256": "b" * 64},
+        "interpreter": {
+            "path": str(interpreter),
+            "sha256": hashlib.sha256(interpreter.read_bytes()).hexdigest(),
+        },
         "distributions": {
             "example": {
                 "distribution": "example",
@@ -77,6 +82,11 @@ class RuntimeAttestationTests(unittest.TestCase):
                     expected_python="3.11.11",
                     requirements=(requirement,),
                 )
+                validate_runtime_attestation(
+                    attestation,
+                    state_slice=STATE_SLICE,
+                    expected_python="3.11.11",
+                )
 
             self.assertEqual(attestation.payload["python"], "3.11.11")
             self.assertEqual(attestation.payload["interpreter"]["path"], str(interpreter.resolve()))
@@ -95,11 +105,6 @@ class RuntimeAttestationTests(unittest.TestCase):
                 hashlib.sha256(module_file.read_bytes()).hexdigest(),
             )
             self.assertEqual(len(attestation.attestation_digest), 64)
-            validate_runtime_attestation(
-                attestation,
-                state_slice=STATE_SLICE,
-                expected_python="3.11.11",
-            )
 
     def test_attestation_is_immutable_and_schema_bound(self):
         attestation = RuntimeAttestation.from_payload(valid_payload())
@@ -115,6 +120,14 @@ class RuntimeAttestationTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeAttestationError, "hash"):
             validate_runtime_attestation(
                 RuntimeAttestation.from_payload(malformed),
+                state_slice=STATE_SLICE,
+                expected_python="3.11.11",
+            )
+        altered_interpreter = valid_payload()
+        altered_interpreter["interpreter"]["sha256"] = "d" * 64
+        with self.assertRaisesRegex(RuntimeAttestationError, "interpreter does not match"):
+            validate_runtime_attestation(
+                RuntimeAttestation.from_payload(altered_interpreter),
                 state_slice=STATE_SLICE,
                 expected_python="3.11.11",
             )

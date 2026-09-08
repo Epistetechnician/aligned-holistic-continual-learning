@@ -3,6 +3,8 @@
 Ephemeral test keys prove verifier mechanics only; never execution acceptance.
 """
 import unittest
+import hashlib
+import sys
 from copy import deepcopy
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -74,7 +76,10 @@ class VerificationTests(unittest.TestCase):
                 'schema':'ahcl.runtime.attestation.v1',
                 'state_slice':'test',
                 'python':'3.11.11',
-                'interpreter': {'path':'/opt/python/bin/python3.11', 'sha256':'b'*64},
+                'interpreter': {
+                    'path': str(Path(sys.executable).resolve()),
+                    'sha256': hashlib.sha256(Path(sys.executable).resolve().read_bytes()).hexdigest(),
+                },
                 'distributions': {
                     'test': {
                         'distribution':'test',

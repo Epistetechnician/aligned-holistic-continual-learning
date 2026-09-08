@@ -6,6 +6,7 @@ import json
 import hashlib
 import math
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -203,7 +204,10 @@ class IntegratedPortTests(unittest.TestCase):
             "schema": "ahcl.runtime.attestation.v1",
             "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
             "python": "3.11.11",
-            "interpreter": {"path": "/opt/python/bin/python3.11", "sha256": "b" * 64},
+            "interpreter": {
+                "path": str(Path(sys.executable).resolve()),
+                "sha256": hashlib.sha256(Path(sys.executable).resolve().read_bytes()).hexdigest(),
+            },
             "distributions": {
                 "torch": {
                     "distribution": "torch",
