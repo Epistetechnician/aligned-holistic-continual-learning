@@ -65,6 +65,7 @@
     "circuit_tracer_transformers": "4.57.3",
     "circuit_tracer_transformer_lens": "2.16.1",
     "circuit_tracer_nnsight_commit": "3fd13f8959cf9bcb79fc87d24bc244bceb26e3e5",
+    "acdc_numpy": "1.26.4",
     "acdc_torch": "1.13.1",
     "acdc_transformers": "4.35.2",
     "acdc_transformer_lens": "1.6.1",

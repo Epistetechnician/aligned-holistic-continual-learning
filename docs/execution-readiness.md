@@ -86,11 +86,12 @@ installed distribution files and imported module bytes, and emits canonical
 JSON to stdout. Each distribution roster is rooted at the selected environment
 so executable files outside `site-packages` are covered too. Retain those
 documents in the external review/custody system; do not commit them. The
-qualified ACDC lane is Python `3.11.11` with Torch `1.13.1`, and the qualified
+qualified ACDC lane is Python `3.11.11` with NumPy `1.26.4` and Torch
+`1.13.1`, and the qualified
 NNsight/circuit-tracer lane is Python `3.11.11` with the pinned NNsight source
 commit and a native extension built from that checkout. The current lane
 attestation digests are ACDC
-`3f95e7e684c2ff81e04785fa6552f08b50cfbd74c518b2ba12fe408c4f5a7cd3` and
+`37d8d9af2aaf323c410608d5c0d92e2b987d285c1a58f78a5314b15a412d561e` and
 NNsight/circuit-tracer
 `a939a5b8e72fa9d733f52ba6adacf1dd862c41bc726019bee83434d9f484fb41`.
 Source attestation digests are ACDC

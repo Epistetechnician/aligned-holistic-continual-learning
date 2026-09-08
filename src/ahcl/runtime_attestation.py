@@ -39,6 +39,7 @@ _RUNTIME_FIELDS = {
         "torch": "circuit_tracer_torch",
     },
     "acdc": {
+        "numpy": "acdc_numpy",
         "transformers": "acdc_transformers",
         "transformer-lens": "acdc_transformer_lens",
         "torch": "acdc_torch",

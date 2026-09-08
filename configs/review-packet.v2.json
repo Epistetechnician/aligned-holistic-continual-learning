@@ -59,6 +59,7 @@
     },
     "runtime": {
       "acdc_commit": "bc99ace817974b5584b7ee203d596a8e2bbcd399",
+      "acdc_numpy": "1.26.4",
       "acdc_torch": "1.13.1",
       "acdc_transformer_lens": "1.6.1",
       "acdc_transformerlens_commit": "3745d0c18b683cdcdd4b4acf3800f038c2fe8aa7",
@@ -107,11 +108,11 @@
     }
   },
   "corpus_manifest_digest": "049f6af155073b587fe6c31db342700be15000deccfbf61cbc9ff99d55c3992c",
-  "dependency_lanes_digest": "e5dac1ec0fb40e835c4be5218dd845ce86420c01dce2f97b1cc328f98a8d71c6",
-  "packet_digest": "3c927dc32dcd025045356e0e4b68e4beeaf6c4a572bf5e03d3458496fa2057a7",
+  "dependency_lanes_digest": "24ab02e9191ab0d3a8dca7b55057d20f99f292bce2d92f6a7de9cd692e672a7d",
+  "packet_digest": "7e2f5201e32169eafbaec0accc34c7e7c0c5302905d324567d33b5389f0e80fb",
   "packet_role": "readiness",
   "schema": "ahcl.review.packet.v1",
-  "source_digest": "f893b85a83bd7acd9ace256f7bfaffa6b8f398d72112916c05903a0fefb4c80f",
+  "source_digest": "558bcc35c8a4744ddd34ccf74d2707def3e2d712c506391194bd6bea3dab65a7",
   "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
   "upstream_lock_digest": "c7545c15404b911ca50ae7f00e369bd82e0439ebac81e698dd0d2a75c5536816"
 }

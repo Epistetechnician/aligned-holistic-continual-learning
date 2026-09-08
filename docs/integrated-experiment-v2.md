@@ -20,9 +20,9 @@ circuit-tracer lane is pinned to Torch 2.6.0, Transformers 4.57.3, NNsight
 0.6.1, and TransformerLens 2.16.1. It uses the exact NNsight v0.6.1 and
 TransformerLens v2.16.1 submodules. Torch 2.6.0 is required by TransformerLens
 v2.16.1 on Python 3.11; lower Torch pins would make this lane unsatisfiable.
-The ACDC lane is pinned to Torch 1.13.1,
-Transformers 4.35.2, and TransformerLens 1.6.1. These exact versions are
-recorded in `configs/dependency-lanes.json` and in the review packet.
+The ACDC lane is pinned to NumPy 1.26.4, Torch 1.13.1, Transformers 4.35.2,
+and TransformerLens 1.6.1. These exact versions are recorded in
+`configs/dependency-lanes.json` and in the review packet.
 
 The feature asset is SAELens release
 `gpt2-small-mlp-out-v5-32k`, repository

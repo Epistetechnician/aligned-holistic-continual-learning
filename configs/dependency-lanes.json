@@ -42,6 +42,7 @@
       },
       "constraints": {
         "python": "3.11.11",
+        "numpy": "==1.26.4",
         "transformers": "==4.35.2",
         "transformer-lens": "==1.6.1",
         "torch": "==1.13.1"

@@ -66,6 +66,7 @@ def validate_dependency_lanes(lanes_path: Path, config: dict[str, Any]) -> str:
     acdc = lanes.get("lanes", {}).get("acdc", {}).get("constraints", {})
     if acdc != {
         "python": "3.11.11",
+        "numpy": f"=={runtime.get('acdc_numpy')}",
         "transformers": f"=={runtime.get('acdc_transformers')}",
         "transformer-lens": f"=={runtime.get('acdc_transformer_lens')}",
         "torch": f"=={runtime.get('acdc_torch')}",
