@@ -64,6 +64,30 @@ def validate_dependency_lanes(lanes_path: Path, config: dict[str, Any]) -> str:
         "torch": f"=={runtime.get('acdc_torch')}",
     }:
         raise PreflightError("ACDC lane does not match the configured runtime")
+    runtime_commit_fields = {
+        "modern": {
+            "transformerlens": "transformerlens_commit",
+            "saelens": "saelens_commit",
+            "nnsight": "nnsight_commit",
+            "pyvene": "pyvene_commit",
+        },
+        "circuit_tracer": {
+            "circuit-tracer": "circuit_tracer_commit",
+            "nnsight-circuit-tracer-legacy": "circuit_tracer_nnsight_commit",
+            "transformerlens-circuit-tracer-legacy": "circuit_tracer_transformerlens_commit",
+        },
+        "acdc": {
+            "acdc": "acdc_commit",
+            "transformerlens-acdc-legacy": "acdc_transformerlens_commit",
+        },
+        "visualization": {"neuronpedia": "neuronpedia_commit"},
+    }
+    runtime = config.get("runtime", {})
+    for lane_name, source_fields in runtime_commit_fields.items():
+        commits = lanes.get("lanes", {}).get(lane_name, {}).get("source_commits", {})
+        for source_name, runtime_field in source_fields.items():
+            if runtime.get(runtime_field) != commits.get(source_name):
+                raise PreflightError(f"runtime source commit mismatch: {lane_name}:{source_name}")
     return digest(lanes)
 
 
