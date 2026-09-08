@@ -132,7 +132,9 @@ per-split panel remains a design blocker. The runtime-attestation helper now
 binds interpreter, distribution, and imported module bytes. The NNsight and
 circuit-tracer adapters enforce local-byte custody. The required Python 3.11.11 environments and model/feature
 bytes are still absent on this host, so no launch attestation has been
-produced. A fresh execution review is required after those inputs are
+produced. The locked study exposes a document-level Holm union-bound power
+lower bound and rejects a `validated` status when six documents are
+insufficient. A fresh execution review is required after those inputs are
 available.
 
 Concurrent commits were observed during integration. Existing commits and

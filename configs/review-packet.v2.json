@@ -84,15 +84,20 @@
     "study": {
       "alpha": 0.05,
       "attrition": "zero",
+      "families_per_document": 8,
       "family_counts": {
         "assessment": 48,
         "fit": 48,
         "tune": 48
       },
       "icc_assumption": 0.5,
+      "independent_unit": "document",
+      "joint_power_target": 0.8,
       "minimum_standardized_effect": 0.5,
       "missingness": "fail_closed",
       "multiplicity": "Holm",
+      "power_design_status": "unvalidated",
+      "power_endpoints": 4,
       "power_method": "two_sided_normal_icc_design_effect",
       "power_scope": "single_comparison_approximation",
       "power_target": 0.8,
@@ -103,9 +108,9 @@
   },
   "corpus_manifest_digest": "049f6af155073b587fe6c31db342700be15000deccfbf61cbc9ff99d55c3992c",
   "dependency_lanes_digest": "e5dac1ec0fb40e835c4be5218dd845ce86420c01dce2f97b1cc328f98a8d71c6",
-  "packet_digest": "de92c4a75f57257314e5e8317e9b89bd057741ad342d96a31ad38ec02a777674",
+  "packet_digest": "d8e7dd0e099ba563690044ea8f297de5ed874f1759a8084fb6b9454ff8eb035d",
   "schema": "ahcl.review.packet.v1",
-  "source_digest": "a917a42d06931b4dc9d903faf9a57c255a96edf21eff88fb2955806ec1bab359",
+  "source_digest": "5e87380c4babb23dccc0d8fa85169038bf2dab89ecabfe194b58f5a5eac87a8a",
   "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
   "upstream_lock_digest": "c7545c15404b911ca50ae7f00e369bd82e0439ebac81e698dd0d2a75c5536816"
 }

@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from statistics import NormalDist
 from typing import Any, Sequence
 
+from .power_design import PowerDesign
+
 
 @dataclass(frozen=True)
 class StatisticalPlan:
@@ -25,6 +27,11 @@ class StatisticalPlan:
     power_method: str = "two_sided_normal_icc_design_effect"
     power_scope: str = "single_comparison_approximation"
     power_validation: str = "familywise_holm_power_unvalidated"
+    independent_unit: str = "document"
+    families_per_document: int = 8
+    power_endpoints: int = 4
+    joint_power_target: float = 0.80
+    power_design_status: str = "unvalidated"
 
     def as_config(self) -> dict[str, Any]:
         return {
@@ -42,6 +49,11 @@ class StatisticalPlan:
             "power_method": self.power_method,
             "power_scope": self.power_scope,
             "power_validation": self.power_validation,
+            "independent_unit": self.independent_unit,
+            "families_per_document": self.families_per_document,
+            "power_endpoints": self.power_endpoints,
+            "joint_power_target": self.joint_power_target,
+            "power_design_status": self.power_design_status,
         }
 
     def validate(self) -> None:
@@ -85,6 +97,11 @@ def validate_locked_study(config: dict[str, Any]) -> StatisticalPlan:
         power_method=study.get("power_method", ""),
         power_scope=study.get("power_scope", ""),
         power_validation=study.get("power_validation", ""),
+        independent_unit=study.get("independent_unit", ""),
+        families_per_document=study.get("families_per_document", 0),
+        power_endpoints=study.get("power_endpoints", 0),
+        joint_power_target=study.get("joint_power_target", -1.0),
+        power_design_status=study.get("power_design_status", ""),
     )
     plan.validate()
     expected = plan.as_config()
@@ -128,19 +145,73 @@ def achieved_power(plan: StatisticalPlan) -> float:
 
 
 def power_check(plan: StatisticalPlan) -> None:
-    if not 0.0 < plan.alpha < 1.0 or not 0.0 < plan.power <= 1.0 or not 0.0 <= plan.icc < 1.0:
+    if (
+        not isinstance(plan.alpha, (int, float))
+        or isinstance(plan.alpha, bool)
+        or not math.isfinite(plan.alpha)
+        or not isinstance(plan.power, (int, float))
+        or isinstance(plan.power, bool)
+        or not math.isfinite(plan.power)
+        or not isinstance(plan.icc, (int, float))
+        or isinstance(plan.icc, bool)
+        or not math.isfinite(plan.icc)
+        or not 0.0 < plan.alpha < 1.0
+        or not 0.0 < plan.power <= 1.0
+        or not 0.0 <= plan.icc < 1.0
+    ):
         raise ValueError("invalid alpha, power, or ICC")
     if plan.multiplicity != "Holm":
         raise ValueError("only the frozen Holm correction is permitted")
     if (
-        not math.isfinite(plan.minimum_effect_size)
+        not isinstance(plan.minimum_effect_size, (int, float))
+        or isinstance(plan.minimum_effect_size, bool)
+        or not math.isfinite(plan.minimum_effect_size)
         or not 0.0 < plan.minimum_effect_size
         or plan.power_method != "two_sided_normal_icc_design_effect"
         or plan.power_scope != "single_comparison_approximation"
         or plan.power_validation != "familywise_holm_power_unvalidated"
+        or not isinstance(plan.independent_unit, str)
+        or plan.independent_unit != "document"
+        or isinstance(plan.families_per_document, bool)
+        or not isinstance(plan.families_per_document, int)
+        or plan.families_per_document < 1
+        or isinstance(plan.power_endpoints, bool)
+        or not isinstance(plan.power_endpoints, int)
+        or plan.power_endpoints < 1
+        or not isinstance(plan.joint_power_target, (int, float))
+        or isinstance(plan.joint_power_target, bool)
+        or not math.isfinite(plan.joint_power_target)
+        or not 0.0 < plan.joint_power_target <= 1.0
+        or not isinstance(plan.power_design_status, str)
+        or plan.power_design_status not in {"unvalidated", "validated"}
     ):
         raise ValueError("invalid frozen power method or effect size")
-    if min(plan.fit_families, plan.tune_families, plan.assessment_families, plan.repeats) < 1:
+    counts = (plan.fit_families, plan.tune_families, plan.assessment_families, plan.repeats)
+    if any(isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in counts):
         raise ValueError("all cohort counts must be positive")
     if achieved_power(plan) < plan.power:
         raise ValueError("locked cohort does not meet the declared power target")
+    if plan.power_design_status == "validated" and document_power_lower_bound(plan) < plan.joint_power_target:
+        raise ValueError("validated family-wise power claim exceeds the document-level design")
+
+
+def document_power_lower_bound(plan: StatisticalPlan) -> float:
+    """Return the conservative document-level Holm-family power lower bound."""
+
+    counts = (plan.fit_families, plan.tune_families, plan.assessment_families)
+    if any(isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in counts):
+        raise ValueError("all cohort counts must be positive")
+    if isinstance(plan.families_per_document, bool) or not isinstance(plan.families_per_document, int) or plan.families_per_document < 1:
+        raise ValueError("families_per_document must be a positive integer")
+    documents = min(plan.fit_families, plan.tune_families, plan.assessment_families) // plan.families_per_document
+    if documents < 1:
+        raise ValueError("cohorts contain no complete independent document")
+    design = PowerDesign(
+        effect_size=plan.minimum_effect_size,
+        alpha=plan.alpha,
+        target_power=plan.power,
+        endpoints=plan.power_endpoints,
+        repeats=plan.repeats,
+        joint_target=plan.joint_power_target,
+    )
+    return design.joint_lower_bound(documents)

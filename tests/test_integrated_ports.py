@@ -60,7 +60,14 @@ from ahcl.review import (
     packet_digest,
     require_independent_accept,
 )
-from ahcl.stats import StatisticalPlan, achieved_power, holm_adjust, power_check, validate_locked_study
+from ahcl.stats import (
+    StatisticalPlan,
+    achieved_power,
+    document_power_lower_bound,
+    holm_adjust,
+    power_check,
+    validate_locked_study,
+)
 from ahcl.synthetic import AXES, observations
 from ahcl.runtime_attestation import RuntimeAttestation, RuntimeAttestationError, validate_runtime_attestation
 
@@ -307,6 +314,9 @@ class IntegratedPortTests(unittest.TestCase):
         plan = StatisticalPlan()
         power_check(plan)
         self.assertGreaterEqual(achieved_power(plan), plan.power)
+        self.assertLess(document_power_lower_bound(plan), plan.joint_power_target)
+        with self.assertRaises(ValueError):
+            power_check(StatisticalPlan(power_design_status="validated"))
 
     def test_machine_readable_study_lock_is_frozen(self):
         config = json.loads(Path("configs/integrated-stack-v2.json").read_text(encoding="utf-8"))
@@ -322,6 +332,10 @@ class IntegratedPortTests(unittest.TestCase):
             validate_locked_study(altered)
         altered = json.loads(json.dumps(config))
         del altered["study"]["power_scope"]
+        with self.assertRaises(ValueError):
+            validate_locked_study(altered)
+        altered = json.loads(json.dumps(config))
+        altered["study"]["power_design_status"] = "validated"
         with self.assertRaises(ValueError):
             validate_locked_study(altered)
 

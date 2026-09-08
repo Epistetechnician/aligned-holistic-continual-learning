@@ -139,7 +139,9 @@ findings; they do not convert this audit into an independent ACCEPT:
   Uncertainty and multiplicity aggregation remain outside this helper.
 - Finding 8: non-finite and empty Holm inputs fail closed.
 
-Findings 4 and 6 remain open. Finding 7 is partially resolved: the
+Findings 4 and 6 remain open. Finding 4 now has an executable document-level
+union-bound lower bound and a fail-closed `validated` status, but no current
+family-wise power claim is validated. Finding 7 is partially resolved: the
 TransformerLens and SAELens adapters now require a caller-supplied source
 checkout, exact revision, local custody root, and weight digest before loading;
 the NNsight and circuit-tracer model paths still require the same local-byte

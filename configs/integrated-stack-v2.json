@@ -23,6 +23,11 @@
     "power_method": "two_sided_normal_icc_design_effect",
     "power_scope": "single_comparison_approximation",
     "power_validation": "familywise_holm_power_unvalidated",
+    "independent_unit": "document",
+    "families_per_document": 8,
+    "power_endpoints": 4,
+    "joint_power_target": 0.8,
+    "power_design_status": "unvalidated",
     "missingness": "fail_closed",
     "attrition": "zero",
     "prediction_lock": "fit_predictor_and_tune_thresholds_before_assessment"

@@ -36,4 +36,6 @@ endpoints, and three recorded repeats, the planner yields per-contrast
 `alpha = 0.0125`, 45 documents for 0.80 marginal power, and 69 documents for
 the 0.80 union-bound joint target. Six documents produce marginal power about
 `0.102` and a zero-clipped joint lower bound of `0`; these are planning values,
-not a scientific adequacy claim.
+not a scientific adequacy claim. `ahcl.stats.document_power_lower_bound`
+exposes this conservative bound for the locked study; marking the study
+`validated` fails closed unless the bound reaches the joint target.

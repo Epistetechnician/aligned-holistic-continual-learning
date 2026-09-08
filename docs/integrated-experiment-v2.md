@@ -135,9 +135,12 @@ the predictor. Assessment rows are unread until the lock digest exists.
 
 The family-wise alpha is 0.05 with Holm correction. The design records a
 minimum standardized effect of 0.50 and a single-comparison two-sided normal
-approximation after the ICC 0.50 design effect for three repeats. This is a
-design target, not a validated family-wise power claim; the Holm joint-power
-calculation remains an independent review blocker. Fixed controls are
+approximation after the ICC 0.50 design effect for three repeats. The
+independent unit is explicitly a document with eight families per document;
+the four-endpoint Holm union-bound lower bound is recorded separately and the
+power design status is `unvalidated`. This is a design target, not a validated
+family-wise power claim; the joint-power calculation remains an independent
+review blocker. Fixed controls are
 activation-only, text-only, exact-copy no-op, shuffled-donor,
 constant-donor, and matched-donor controls. Missing or non-finite rows fail
 closed; there is no attrition replacement.
