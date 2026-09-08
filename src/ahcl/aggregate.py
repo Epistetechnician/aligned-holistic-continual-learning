@@ -26,6 +26,39 @@ class AggregateRow:
     outcomes: tuple[float, ...]
 
 
+def _validate_roster(rows: Sequence[AggregateRow]) -> None:
+    """Validate the family/repeat identity carried by an aggregate packet."""
+
+    if not rows:
+        raise AggregateError("cannot aggregate an empty packet")
+    if any(not isinstance(row, AggregateRow) for row in rows):
+        raise AggregateError("aggregate packet contains an invalid row")
+    if any(
+        not isinstance(row.family_id, str)
+        or not row.family_id.strip()
+        or not isinstance(row.split, str)
+        or not row.split.strip()
+        or type(row.repeat) is not int
+        or row.repeat < 0
+        for row in rows
+    ):
+        raise AggregateError("aggregate row identity is malformed")
+    splits = {row.split for row in rows}
+    if len(splits) != 1:
+        raise AggregateError("aggregate packet mixes study splits")
+    keys = [(row.family_id, row.repeat) for row in rows]
+    if len(set(keys)) != len(keys):
+        raise AggregateError("aggregate packet contains duplicate family-repeat rows")
+    repeat_sets: dict[str, set[int]] = {}
+    for row in rows:
+        repeat_sets.setdefault(row.family_id, set()).add(row.repeat)
+    observed = set.union(*repeat_sets.values())
+    if observed != set(range(max(observed) + 1)):
+        raise AggregateError("aggregate repeats must be contiguous from zero")
+    if any(repeats != observed for repeats in repeat_sets.values()):
+        raise AggregateError("aggregate families have incomplete repeat sets")
+
+
 def _r2(observed: Sequence[float], predicted: Sequence[float]) -> float:
     if not observed or len(observed) != len(predicted):
         raise AggregateError("observed and predicted rows must have equal nonzero length")
@@ -46,8 +79,7 @@ def reproduce_metrics(
     """Recalculate R², constant-baseline R², and sign agreement."""
 
     materialized = tuple(rows)
-    if not materialized:
-        raise AggregateError("cannot aggregate an empty packet")
+    _validate_roster(materialized)
     predictions = tuple(tuple(float(value) for value in predict(row.features)) for row in materialized)
     return reproduce_metrics_from_predictions(materialized, predictions)
 
@@ -60,8 +92,7 @@ def reproduce_metrics_from_predictions(
 
     materialized = tuple(rows)
     prediction_rows = tuple(tuple(float(value) for value in row) for row in predictions)
-    if not materialized:
-        raise AggregateError("cannot aggregate an empty packet")
+    _validate_roster(materialized)
     if len(materialized) != len(prediction_rows):
         raise AggregateError("row and prediction counts differ")
     width = len(materialized[0].outcomes)
@@ -107,8 +138,7 @@ def reproduce_shuffled_r2(
     """Recalculate the fixed shuffled-feature R² control."""
 
     materialized = tuple(rows)
-    if not materialized:
-        raise AggregateError("cannot aggregate an empty packet")
+    _validate_roster(materialized)
     permutation = fixed_permutation(len(materialized))
     predictions = tuple(tuple(float(value) for value in predict(materialized[index].features)) for index in permutation)
     width = len(materialized[0].outcomes)

@@ -23,8 +23,10 @@ dependency-lane separation, exact runtime versions, model and asset hashes,
 corpus author-disjoint splits, retention and custody permissions, evaluator
 definitions, intervention controls, power and multiplicity assumptions, lock
 ordering, and the claim ceiling. The reviewer must return a signed Ed25519
-receipt bound to the packet digest. The execution gate also requires an
-independent verifier callback for that signature; a non-empty string is not
+receipt bound to the canonical message
+`ahcl.review.packet.v1:<packet_digest>`. The execution gate requires the
+reviewer key ID to be present in an external trusted registry and requires an
+independent Ed25519 verifier; a non-empty string or arbitrary callback is not
 accepted as proof.
 
 The operator is not an independent reviewer. A local test run, a green CI

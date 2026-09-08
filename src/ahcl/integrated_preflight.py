@@ -16,6 +16,7 @@ from .custody import validate_manifest
 from .preflight import (
     source_tree_digest,
     validate_corpus_manifest,
+    validate_corpus_custody,
     validate_dependency_lanes,
     validate_input_bindings,
     validate_lane_sources,
@@ -37,6 +38,7 @@ def run_preflight(repo_root: Path, custody_root: Path) -> dict[str, Any]:
     validate_manifest(manifest, expected_root=custody_root)
     validate_input_bindings(config, manifest)
     corpus_digest = validate_corpus_manifest(corpus_manifest, config=config)
+    validate_corpus_custody(corpus_manifest, manifest)
     upstream_digest = validate_upstream_lock(repo_root / "third_party/UPSTREAMS.lock.json")
     validate_lane_sources(repo_root / "configs/dependency-lanes.json", repo_root / "third_party/UPSTREAMS.lock.json")
     lane_digest = validate_dependency_lanes(repo_root / "configs/dependency-lanes.json", config)

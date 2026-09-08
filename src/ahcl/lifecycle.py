@@ -185,8 +185,10 @@ def open_model_trial(
     receipt: ReviewReceipt | None,
     *,
     packet_digest: str,
+    reviewed_packet: Mapping[str, Any] | None = None,
     operator_id: str,
     verify_signature: Callable[[ReviewReceipt, str], bool] | None = None,
+    trusted_public_key_ids: frozenset[str] | None = None,
 ) -> LockedTrial:
     """Open a model-bearing lifecycle only after independent review."""
 
@@ -195,7 +197,9 @@ def open_model_trial(
         config_dict,
         receipt,
         packet_digest=packet_digest,
+        reviewed_packet=reviewed_packet,
         operator_id=operator_id,
         verify_signature=verify_signature,
+        trusted_public_key_ids=trusted_public_key_ids,
     )
     return LockedTrial(config_dict)

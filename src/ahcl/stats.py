@@ -53,6 +53,14 @@ FROZEN_CONTROLS = (
     "matched_donor",
 )
 
+FROZEN_ARMS = (
+    "sgd",
+    "replay",
+    "ewc",
+    "behavioral_selection",
+    "causal_monitor",
+)
+
 
 def validate_locked_study(config: dict[str, Any]) -> StatisticalPlan:
     """Validate the machine-readable study lock and return its plan."""
@@ -75,6 +83,8 @@ def validate_locked_study(config: dict[str, Any]) -> StatisticalPlan:
         raise ValueError("study lock has unexpected values")
     if tuple(config.get("controls", ())) != FROZEN_CONTROLS:
         raise ValueError("control roster is not the frozen ordered roster")
+    if tuple(config.get("arms", ())) != FROZEN_ARMS:
+        raise ValueError("comparison arm roster is not the frozen ordered roster")
     if study.get("missingness") != "fail_closed" or study.get("attrition") != "zero":
         raise ValueError("missingness and attrition policies must fail closed")
     if study.get("prediction_lock") != "fit_predictor_and_tune_thresholds_before_assessment":
@@ -85,8 +95,8 @@ def validate_locked_study(config: dict[str, Any]) -> StatisticalPlan:
 def holm_adjust(p_values: Sequence[float]) -> tuple[float, ...]:
     """Return Holm step-down adjusted p-values in original order."""
 
-    if any(value < 0.0 or value > 1.0 for value in p_values):
-        raise ValueError("p-values must lie in [0, 1]")
+    if not p_values or any(not math.isfinite(value) or value < 0.0 or value > 1.0 for value in p_values):
+        raise ValueError("p-values must be nonempty, finite, and lie in [0, 1]")
     indexed = sorted(enumerate(p_values), key=lambda item: item[1])
     adjusted = [0.0] * len(p_values)
     running = 0.0

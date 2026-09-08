@@ -25,6 +25,13 @@
     "attrition": "zero",
     "prediction_lock": "fit_predictor_and_tune_thresholds_before_assessment"
   },
+  "arms": [
+    "sgd",
+    "replay",
+    "ewc",
+    "behavioral_selection",
+    "causal_monitor"
+  ],
   "controls": [
     "activation_only",
     "text_only",

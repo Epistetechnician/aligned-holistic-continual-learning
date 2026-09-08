@@ -18,7 +18,7 @@ from ahcl.adapters import (
     SAELensFeatureAdapter,
     TransformerLensActivationAdapter,
 )
-from ahcl.aggregate import AggregateRow, reproduce_metrics, reproduce_metrics_from_predictions, reproduce_shuffled_r2
+from ahcl.aggregate import AggregateError, AggregateRow, reproduce_metrics, reproduce_metrics_from_predictions, reproduce_shuffled_r2
 from ahcl.checks import (
     CheckError,
     assert_intervention_reach,
@@ -39,13 +39,20 @@ from ahcl.lifecycle import LifecycleError, LockedTrial, TrialRow
 from ahcl.monitor import RidgeMonitor, metrics, shuffled_metrics
 from ahcl.preflight import (
     build_review_packet,
+    validate_corpus_custody,
     validate_corpus_manifest,
     validate_dependency_lanes,
     validate_lane_sources,
     validate_review_packet,
 )
 from ahcl.qualification import QualificationThresholds, qualify_path
-from ahcl.review import ReviewError, ReviewReceipt, packet_digest, require_independent_accept
+from ahcl.review import (
+    ReviewError,
+    ReviewReceipt,
+    canonical_review_message,
+    packet_digest,
+    require_independent_accept,
+)
 from ahcl.stats import StatisticalPlan, achieved_power, holm_adjust, power_check, validate_locked_study
 from ahcl.synthetic import AXES, observations
 
@@ -95,6 +102,13 @@ class IntegratedPortTests(unittest.TestCase):
         manifest = json.loads(Path("configs/corpus-manifest.v2.json").read_text(encoding="utf-8"))
         config = json.loads(Path("configs/integrated-stack-v2.json").read_text(encoding="utf-8"))
         self.assertEqual(validate_corpus_manifest(manifest, config=config), manifest["manifest_digest"])
+        custody = {
+            "files": [
+                {"path": f"corpus/{document['id']}.txt", "sha256": document["sha256"], "bytes": 1}
+                for document in manifest["documents"]
+            ]
+        }
+        validate_corpus_custody(manifest, custody)
         altered = dict(manifest)
         altered["documents"] = list(manifest["documents"])
         altered["documents"][1] = dict(altered["documents"][1], author=altered["documents"][0]["author"])
@@ -182,6 +196,10 @@ class IntegratedPortTests(unittest.TestCase):
 
     def test_holm_and_power_contract(self):
         self.assertEqual(holm_adjust((0.01, 0.04)), (0.02, 0.04))
+        with self.assertRaises(ValueError):
+            holm_adjust((math.nan,))
+        with self.assertRaises(ValueError):
+            holm_adjust(())
         plan = StatisticalPlan()
         power_check(plan)
         self.assertGreaterEqual(achieved_power(plan), plan.power)
@@ -192,6 +210,10 @@ class IntegratedPortTests(unittest.TestCase):
         self.assertEqual(plan.as_config()["family_counts"], {"fit": 48, "tune": 48, "assessment": 48})
         altered = dict(config)
         altered["controls"] = list(reversed(altered["controls"]))
+        with self.assertRaises(ValueError):
+            validate_locked_study(altered)
+        altered = dict(config)
+        altered["arms"] = list(reversed(altered["arms"]))
         with self.assertRaises(ValueError):
             validate_locked_study(altered)
 
@@ -259,6 +281,27 @@ class IntegratedPortTests(unittest.TestCase):
         for index, axis in enumerate(AXES):
             self.assertAlmostEqual(shuffled[str(index)], expected_shuffled[axis])
 
+    def test_independent_aggregates_reject_roster_corruption(self):
+        rows = observations("assessment", "fixed_update")
+        monitor = RidgeMonitor.fit(observations("fit", "fixed_update"), ridge=0.1)
+        packet = tuple(
+            AggregateRow(str(row.family), row.split, 0, row.features, row.outcomes)
+            for row in rows
+        )
+        with self.assertRaises(AggregateError):
+            reproduce_metrics(packet + (packet[0],), monitor.predict)
+        mixed = packet[:-1] + (AggregateRow(packet[-1].family_id, "fit", packet[-1].repeat, packet[-1].features, packet[-1].outcomes),)
+        with self.assertRaises(AggregateError):
+            reproduce_metrics(mixed, monitor.predict)
+        expanded = tuple(
+            AggregateRow(row.family_id, row.split, repeat, row.features, row.outcomes)
+            for row in packet
+            for repeat in range(3)
+        )
+        incomplete = expanded[:-1]
+        with self.assertRaises(AggregateError):
+            reproduce_metrics(incomplete, monitor.predict)
+
     def test_locked_trial_enforces_phase_order_and_disjoint_cohorts(self):
         plan = StatisticalPlan(
             fit_families=2,
@@ -298,6 +341,17 @@ class IntegratedPortTests(unittest.TestCase):
         receipt = ReviewReceipt(packet_digest(packet), "reviewer", "ACCEPT", "signed", public_key_id="key-1")
         with self.assertRaises(ReviewError):
             require_independent_accept(receipt, expected_packet_digest=packet_digest(packet), operator_id="operator")
+
+        with self.assertRaises(ReviewError):
+            require_independent_accept(
+                receipt,
+                expected_packet_digest=packet_digest(packet),
+                operator_id="operator",
+                verify_signature=lambda _receipt, _message: True,
+                trusted_public_key_ids=frozenset({"other-key"}),
+            )
+
+        self.assertEqual(canonical_review_message("0" * 64), "ahcl.review.packet.v1:" + "0" * 64)
 
     def test_execution_stays_closed_without_review(self):
         config = {"execution": {"enabled": False}}

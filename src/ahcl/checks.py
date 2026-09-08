@@ -53,7 +53,10 @@ def _flatten(value: Any) -> Iterable[float]:
 
 def max_abs_delta(left: Any, right: Any) -> float:
     left_values, right_values = _paired(left, right)
-    return max((abs(a - b) for a, b in zip(left_values, right_values)), default=0.0)
+    delta = max(abs(a - b) for a, b in zip(left_values, right_values))
+    if not math.isfinite(delta):
+        raise CheckError("comparison overflow")
+    return delta
 
 
 def assert_parity(native: Any, instrumented: Any, *, atol: float = 1e-5) -> float:
@@ -82,8 +85,13 @@ def assert_intervention_reach(base: Any, intervened: Any, *, minimum_delta: floa
 
 def normalized_reconstruction_mse(original: Any, reconstructed: Any) -> float:
     original_values, reconstructed_values = _paired(original, reconstructed)
-    denominator = sum(value * value for value in original_values)
-    numerator = sum((a - b) ** 2 for a, b in zip(original_values, reconstructed_values))
+    try:
+        denominator = sum(value * value for value in original_values)
+        numerator = sum((a - b) ** 2 for a, b in zip(original_values, reconstructed_values))
+    except OverflowError as exc:
+        raise CheckError("reconstruction arithmetic overflow") from exc
+    if not math.isfinite(denominator) or not math.isfinite(numerator):
+        raise CheckError("reconstruction arithmetic overflow")
     if not all(math.isfinite(value) for value in original_values + reconstructed_values):
         raise CheckError("reconstruction values must be finite")
     if denominator == 0.0:

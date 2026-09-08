@@ -163,6 +163,22 @@ def validate_input_bindings(config: dict[str, Any], custody_manifest: dict[str, 
         raise PreflightError("custody corpus roster mismatch")
 
 
+def validate_corpus_custody(corpus_manifest: dict[str, Any], custody_manifest: dict[str, Any]) -> None:
+    """Bind each declared document ID and byte hash to the custody manifest."""
+
+    files = {entry["path"]: entry for entry in custody_manifest.get("files", [])}
+    expected_paths = set()
+    for document in corpus_manifest["documents"]:
+        path = f"corpus/{document['id']}.txt"
+        expected_paths.add(path)
+        entry = files.get(path)
+        if entry is None or entry.get("sha256") != document["sha256"] or entry.get("bytes", 0) <= 0:
+            raise PreflightError(f"custody document binding mismatch: {path}")
+    actual_paths = {path for path in files if path.startswith("corpus/")}
+    if actual_paths != expected_paths:
+        raise PreflightError("custody corpus file roster mismatch")
+
+
 def validate_corpus_manifest(corpus_manifest: dict[str, Any], *, config: dict[str, Any] | None = None) -> str:
     """Validate the public corpus roster and return its canonical digest."""
 
@@ -176,6 +192,29 @@ def validate_corpus_manifest(corpus_manifest: dict[str, Any], *, config: dict[st
     documents = corpus_manifest["documents"]
     if not isinstance(documents, list) or len(documents) != 18:
         raise PreflightError("corpus manifest must contain exactly 18 documents")
+    required_document_fields = {"author", "id", "sha256", "split", "title"}
+    ids: set[int] = set()
+    hashes: set[str] = set()
+    for document in documents:
+        if not isinstance(document, dict) or not required_document_fields.issubset(document):
+            raise PreflightError("corpus document entry is incomplete")
+        identifier = document["id"]
+        checksum = document["sha256"]
+        if isinstance(identifier, bool) or not isinstance(identifier, int) or identifier <= 0 or identifier in ids:
+            raise PreflightError("corpus document IDs must be unique positive integers")
+        if (
+            not isinstance(checksum, str)
+            or len(checksum) != 64
+            or any(character not in "0123456789abcdef" for character in checksum)
+            or checksum in hashes
+        ):
+            raise PreflightError("corpus document hashes must be unique canonical SHA-256 values")
+        if document["split"] not in {"fit", "tune", "assessment"}:
+            raise PreflightError("corpus document split is invalid")
+        if any(not isinstance(document[field], str) or not document[field].strip() for field in ("author", "title")):
+            raise PreflightError("corpus document author and title are required")
+        ids.add(identifier)
+        hashes.add(checksum)
     if len({document.get("author") for document in documents}) != 18:
         raise PreflightError("corpus authors must be disjoint")
     split_counts = {split: sum(document.get("split") == split for document in documents) for split in ("fit", "tune", "assessment")}
@@ -188,6 +227,13 @@ def validate_corpus_manifest(corpus_manifest: dict[str, Any], *, config: dict[st
             config["model"]["revision"],
         ):
             raise PreflightError("corpus tokenizer identity mismatch")
+        tokenizer_hash = tokenizer.get("sha256")
+        if (
+            not isinstance(tokenizer_hash, str)
+            or len(tokenizer_hash) != 64
+            or any(character not in "0123456789abcdef" for character in tokenizer_hash)
+        ):
+            raise PreflightError("corpus tokenizer hash is not canonical")
     return corpus_manifest["manifest_digest"]
 
 
