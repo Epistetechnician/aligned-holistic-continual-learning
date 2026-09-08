@@ -10,7 +10,8 @@ The integrated upstream slice adds pinned source submodules and lazy adapters.
 Install them with `git submodule update --init --recursive`; do not edit the
 submodule contents. The model-backed design is recorded in
 `docs/integrated-experiment-v2.md` and is fail-closed until independent review
-accepts its packet.
+accepts its packet. State slice:
+`aligned-holistic-continual-learning-integrated-stack-v2`.
 
 The repository has three bounded layers:
 

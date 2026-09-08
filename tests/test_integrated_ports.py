@@ -37,7 +37,12 @@ from ahcl.controllers import (
 from ahcl.continual import StreamBatch
 from ahcl.lifecycle import LifecycleError, LockedTrial, TrialRow
 from ahcl.monitor import RidgeMonitor, metrics, shuffled_metrics
-from ahcl.preflight import build_review_packet, validate_dependency_lanes, validate_review_packet
+from ahcl.preflight import (
+    build_review_packet,
+    validate_corpus_manifest,
+    validate_dependency_lanes,
+    validate_review_packet,
+)
 from ahcl.qualification import QualificationThresholds, qualify_path
 from ahcl.review import ReviewError, ReviewReceipt, packet_digest, require_independent_accept
 from ahcl.stats import StatisticalPlan, achieved_power, holm_adjust, power_check, validate_locked_study
@@ -84,6 +89,16 @@ class IntegratedPortTests(unittest.TestCase):
         digest = validate_dependency_lanes(Path("configs/dependency-lanes.json"), config)
         self.assertEqual(len(digest), 64)
 
+    def test_corpus_manifest_is_digest_bound_and_disjoint(self):
+        manifest = json.loads(Path("configs/corpus-manifest.v2.json").read_text(encoding="utf-8"))
+        config = json.loads(Path("configs/integrated-stack-v2.json").read_text(encoding="utf-8"))
+        self.assertEqual(validate_corpus_manifest(manifest, config=config), manifest["manifest_digest"])
+        altered = dict(manifest)
+        altered["documents"] = list(manifest["documents"])
+        altered["documents"][1] = dict(altered["documents"][1], author=altered["documents"][0]["author"])
+        with self.assertRaises(ValueError):
+            validate_corpus_manifest(altered, config=config)
+
     def test_custody_manifest_hashes_regular_files(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -100,13 +115,23 @@ class IntegratedPortTests(unittest.TestCase):
         packet = build_review_packet(
             config={"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"},
             upstream_lock={"commit": "source"},
-            corpus_manifest={"manifest_digest": "corpus"},
-            source_digest="source-tree",
+            dependency_lanes={"lane": "modern"},
+            corpus_manifest={"manifest_digest": "0" * 64},
+            source_digest="0" * 64,
         )
         validate_review_packet(packet)
         packet["source_digest"] = "changed"
         with self.assertRaises(ValueError):
             validate_review_packet(packet)
+
+        incomplete = build_review_packet(
+            config={"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"},
+            upstream_lock={"commit": "source"},
+            corpus_manifest={"manifest_digest": "0" * 64},
+            source_digest="0" * 64,
+        )
+        with self.assertRaises(ValueError):
+            validate_review_packet(incomplete)
 
     def test_numerical_checks_enforce_noop_and_reach(self):
         self.assertEqual(assert_noop_identity((1.0, 2.0), (1.0, 2.0)), 0.0)

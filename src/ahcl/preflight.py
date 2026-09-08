@@ -124,6 +124,34 @@ def validate_input_bindings(config: dict[str, Any], custody_manifest: dict[str, 
         raise PreflightError("custody corpus roster mismatch")
 
 
+def validate_corpus_manifest(corpus_manifest: dict[str, Any], *, config: dict[str, Any] | None = None) -> str:
+    """Validate the public corpus roster and return its canonical digest."""
+
+    required = {"schema", "state_slice", "documents", "selection_rule", "source", "tokenizer", "manifest_digest"}
+    if not required.issubset(corpus_manifest) or corpus_manifest["schema"] != "ahcl.corpus.manifest.v1":
+        raise PreflightError("corpus manifest schema mismatch")
+    if config is not None and corpus_manifest["state_slice"] != config.get("state_slice"):
+        raise PreflightError("corpus manifest state slice mismatch")
+    if digest({key: value for key, value in corpus_manifest.items() if key != "manifest_digest"}) != corpus_manifest["manifest_digest"]:
+        raise PreflightError("corpus manifest digest mismatch")
+    documents = corpus_manifest["documents"]
+    if not isinstance(documents, list) or len(documents) != 18:
+        raise PreflightError("corpus manifest must contain exactly 18 documents")
+    if len({document.get("author") for document in documents}) != 18:
+        raise PreflightError("corpus authors must be disjoint")
+    split_counts = {split: sum(document.get("split") == split for document in documents) for split in ("fit", "tune", "assessment")}
+    if split_counts != {"fit": 6, "tune": 6, "assessment": 6}:
+        raise PreflightError("corpus split roster mismatch")
+    if config is not None:
+        tokenizer = corpus_manifest["tokenizer"]
+        if (tokenizer.get("name"), tokenizer.get("revision")) != (
+            config["model"]["id"],
+            config["model"]["revision"],
+        ):
+            raise PreflightError("corpus tokenizer identity mismatch")
+    return corpus_manifest["manifest_digest"]
+
+
 def build_review_packet(
     *,
     config: dict[str, Any],
@@ -160,6 +188,16 @@ def validate_review_packet(packet: dict[str, Any]) -> None:
     }
     if set(packet) != required or packet["schema"] != "ahcl.review.packet.v1":
         raise PreflightError("review packet schema mismatch")
+    if (
+        not isinstance(packet["config"], dict)
+        or not packet["state_slice"]
+        or packet["config"].get("state_slice") != packet["state_slice"]
+    ):
+        raise PreflightError("review packet state slice mismatch")
+    for field in ("upstream_lock_digest", "dependency_lanes_digest", "corpus_manifest_digest", "source_digest"):
+        value = packet[field]
+        if not isinstance(value, str) or len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+            raise PreflightError(f"review packet {field} is not a canonical digest")
     expected = digest({key: value for key, value in packet.items() if key != "packet_digest"})
     if expected != packet["packet_digest"]:
         raise PreflightError("review packet digest mismatch")

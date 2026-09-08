@@ -15,6 +15,7 @@ from typing import Any
 from .custody import validate_manifest
 from .preflight import (
     source_tree_digest,
+    validate_corpus_manifest,
     validate_dependency_lanes,
     validate_input_bindings,
     validate_review_packet,
@@ -29,14 +30,24 @@ def run_preflight(repo_root: Path, custody_root: Path) -> dict[str, Any]:
     repo_root = repo_root.resolve()
     custody_root = custody_root.resolve()
     config = json.loads((repo_root / "configs/integrated-stack-v2.json").read_text(encoding="utf-8"))
+    corpus_manifest = json.loads((repo_root / "configs/corpus-manifest.v2.json").read_text(encoding="utf-8"))
     packet = json.loads((repo_root / "configs/review-packet.v2.json").read_text(encoding="utf-8"))
     manifest = json.loads((custody_root / "manifest.json").read_text(encoding="utf-8"))
     validate_manifest(manifest, expected_root=custody_root)
     validate_input_bindings(config, manifest)
+    corpus_digest = validate_corpus_manifest(corpus_manifest, config=config)
     upstream_digest = validate_upstream_lock(repo_root / "third_party/UPSTREAMS.lock.json")
     lane_digest = validate_dependency_lanes(repo_root / "configs/dependency-lanes.json", config)
     validate_locked_study(config)
     validate_review_packet(packet)
+    if packet["config"] != config:
+        raise ValueError("review packet configuration is stale")
+    if packet["upstream_lock_digest"] != upstream_digest:
+        raise ValueError("review packet upstream digest is stale")
+    if packet["dependency_lanes_digest"] != lane_digest:
+        raise ValueError("review packet dependency-lane digest is stale")
+    if packet["corpus_manifest_digest"] != corpus_digest:
+        raise ValueError("review packet corpus digest is stale")
     actual_source_digest = source_tree_digest(repo_root)
     if actual_source_digest != packet["source_digest"]:
         raise ValueError("review packet source digest is stale")
@@ -48,6 +59,7 @@ def run_preflight(repo_root: Path, custody_root: Path) -> dict[str, Any]:
         "custody_manifest_digest": manifest["manifest_digest"],
         "upstream_lock_digest": upstream_digest,
         "dependency_lanes_digest": lane_digest,
+        "corpus_manifest_digest": corpus_digest,
         "source_digest": actual_source_digest,
         "packet_digest": packet["packet_digest"],
     }
