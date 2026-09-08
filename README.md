@@ -55,3 +55,9 @@ disabled.
 The synthetic status is a local implementation contract. It is not evidence
 of mechanistic understanding, alignment, continual-learning superiority, or
 generalization to a real model.
+
+The integrated packet is currently `READY_FOR_INDEPENDENT_REVIEW`, with
+execution disabled. Its declared power is a single-comparison approximation;
+Holm joint power, runtime distribution attestation, and local-byte custody
+for the remaining NNsight and circuit-tracer paths are unresolved review
+items. No model-backed result is reported.

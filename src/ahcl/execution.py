@@ -5,10 +5,10 @@ State slice: aligned-holistic-continual-learning-integrated-stack-v2.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Mapping
+from typing import Any, Mapping
 
 from .canonical import digest
-from .review import ReviewReceipt, require_independent_accept
+from .review import Ed25519Verifier, ReviewReceipt, require_independent_accept
 
 
 class ExecutionClosed(RuntimeError):
@@ -22,7 +22,7 @@ def require_execution_open(
     packet_digest: str,
     reviewed_packet: Mapping[str, Any] | None = None,
     operator_id: str,
-    verify_signature: Callable[[ReviewReceipt, str], bool] | None = None,
+    verify_signature: Ed25519Verifier | None = None,
     trusted_public_key_ids: frozenset[str] | None = None,
 ) -> None:
     if not config.get("execution", {}).get("enabled", False):

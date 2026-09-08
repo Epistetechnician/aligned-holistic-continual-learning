@@ -119,13 +119,18 @@ and two PyTorch-dependent tests skipped; PyTorch is absent from this interpreter
 Integration fixes reject duplicate document IDs and malformed hashes, reject
 nonfinite Holm inputs, deep-copy configuration/predictor payloads, check those
 identities before assessment access, and consume assessment on success or
-failure. These close portions of audit findings 2, 3, and 8; the audit remains
-a record of its earlier snapshot. Arbitrary executable predictor state is
-still not bound to the declared payload, and re-instantiating a trial is not
-prevented by an external one-use custody service. Content overlap, document
-clustering, multiplicity-aware power, trusted signature verification, loaded
-runtime provenance, local-only loaders, and family-level aggregate reproduction
-remain unresolved. A fresh execution review is required after those repairs.
+failure. Durable assessment-attempt custody now provides an atomic external
+one-use marker when configured. Review receipts use a canonical Ed25519
+message and trusted-key registry; the launch boundary also binds the exact
+reviewed packet and configuration. Corpus document hashes bind to custody,
+and independent aggregate reproduction validates family/repeat rosters,
+fit-only constant baselines, and family-level shuffling. TransformerLens and
+SAELens adapters require local, digest-checked inputs and pinned checkout
+locations. A conservative document-level power planner records the gap
+between single-comparison power and Holm joint power; the current six-document
+per-split panel remains a design blocker. Loaded runtime distribution
+attestation and local-byte boundaries for NNsight and circuit-tracer remain
+open. A fresh execution review is required after those repairs.
 
 Concurrent commits were observed during integration. Existing commits and
 unrelated edits were preserved; no external custody or submodule source was

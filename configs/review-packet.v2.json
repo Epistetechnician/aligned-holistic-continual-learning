@@ -18,7 +18,8 @@
     ],
     "corpus": {
       "manifest": "external custody manifest required",
-      "selection": "18 documents, author-disjoint fit/tune/assessment families",
+      "manifest_digest": "049f6af155073b587fe6c31db342700be15000deccfbf61cbc9ff99d55c3992c",
+      "selection": "18 documents, author-disjoint splits, eight explicit families per document",
       "sha256": "ca333265062744326f2ed9f15a3f28de5c6a15d04c8b1e196d68b0ddf6a1b4cf",
       "source": "Project Gutenberg public-domain prose",
       "status": "custodied_pending_independent_review"
@@ -93,16 +94,18 @@
       "missingness": "fail_closed",
       "multiplicity": "Holm",
       "power_method": "two_sided_normal_icc_design_effect",
+      "power_scope": "single_comparison_approximation",
       "power_target": 0.8,
+      "power_validation": "familywise_holm_power_unvalidated",
       "prediction_lock": "fit_predictor_and_tune_thresholds_before_assessment",
       "repeats": 3
     }
   },
-  "corpus_manifest_digest": "5961c550e1f39cbfc4a55e11a7a8f7783c38401357fa6332f6cf88ab298a90c6",
+  "corpus_manifest_digest": "049f6af155073b587fe6c31db342700be15000deccfbf61cbc9ff99d55c3992c",
   "dependency_lanes_digest": "e5dac1ec0fb40e835c4be5218dd845ce86420c01dce2f97b1cc328f98a8d71c6",
-  "packet_digest": "182cc2dbd1959c97059d1f55e14ecf50d8f2b5c1d2c27d13fca6b34caa9832bc",
+  "packet_digest": "2168e605dd91bf441757e99ef3224b721ff3fbb3d30848d1dff8a8ce26e89c01",
   "schema": "ahcl.review.packet.v1",
-  "source_digest": "26b6dd17aa879d17eb23b6d4961d96491b782dbeff1dd2707e3155226e58eb71",
+  "source_digest": "ae7ed091dce97c78494da1a3b9d88461b85eca8261fc39c9cb20267f9b770d63",
   "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
   "upstream_lock_digest": "c7545c15404b911ca50ae7f00e369bd82e0439ebac81e698dd0d2a75c5536816"
 }

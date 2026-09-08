@@ -2,6 +2,7 @@
 import json
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from ahcl.canonical import digest
 from ahcl.preflight import validate_corpus_manifest
 from ahcl.stats import holm_adjust, StatisticalPlan
@@ -21,8 +22,12 @@ class FalsificationRegressions(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_corpus_manifest(manifest)
 
-    def locked_trial(self):
-        trial = LockedTrial({'nested': {'x': 1}}, StatisticalPlan())
+    def locked_trial(self, assessment_custody_root=None):
+        trial = LockedTrial(
+            {'nested': {'x': 1}},
+            StatisticalPlan(),
+            assessment_custody_root=assessment_custody_root,
+        )
         rows = lambda split: [TrialRow(f'{split}-{i}', split, r, (), ())
                               for i in range(48) for r in range(3)]
         trial.fit(rows('fit'), lambda data: (object(), {'coefficient': 1}))
@@ -41,6 +46,16 @@ class FalsificationRegressions(unittest.TestCase):
             trial.assess(rows[:-1], lambda predictor,data: {'metric': 0})
         with self.assertRaises(LifecycleError):
             trial.assess(rows, lambda predictor,data: {'metric': 0})
+
+    def test_assessment_claim_is_durable_when_external_custody_is_configured(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "assessment"
+            root.mkdir()
+            root.chmod(0o700)
+            trial, rows = self.locked_trial(root)
+            trial.assess(rows, lambda predictor, data: {'metric': 0})
+            marker = next(root.glob("assessment-attempt.*.json"))
+            self.assertTrue(marker.is_file())
 
     def test_config_mutation_rejected_before_reading_assessment(self):
         trial, rows = self.locked_trial()

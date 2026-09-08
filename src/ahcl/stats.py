@@ -23,6 +23,8 @@ class StatisticalPlan:
     multiplicity: str = "Holm"
     minimum_effect_size: float = 0.50
     power_method: str = "two_sided_normal_icc_design_effect"
+    power_scope: str = "single_comparison_approximation"
+    power_validation: str = "familywise_holm_power_unvalidated"
 
     def as_config(self) -> dict[str, Any]:
         return {
@@ -38,6 +40,8 @@ class StatisticalPlan:
             "multiplicity": self.multiplicity,
             "minimum_standardized_effect": self.minimum_effect_size,
             "power_method": self.power_method,
+            "power_scope": self.power_scope,
+            "power_validation": self.power_validation,
         }
 
     def validate(self) -> None:
@@ -77,9 +81,14 @@ def validate_locked_study(config: dict[str, Any]) -> StatisticalPlan:
         power=study.get("power_target", -1.0),
         icc=study.get("icc_assumption", -1.0),
         multiplicity=study.get("multiplicity", ""),
+        minimum_effect_size=study.get("minimum_standardized_effect", -1.0),
+        power_method=study.get("power_method", ""),
+        power_scope=study.get("power_scope", ""),
+        power_validation=study.get("power_validation", ""),
     )
     plan.validate()
-    if plan.as_config() != {key: study[key] for key in plan.as_config()}:
+    expected = plan.as_config()
+    if any(study.get(key) != value for key, value in expected.items()):
         raise ValueError("study lock has unexpected values")
     if tuple(config.get("controls", ())) != FROZEN_CONTROLS:
         raise ValueError("control roster is not the frozen ordered roster")
@@ -127,6 +136,8 @@ def power_check(plan: StatisticalPlan) -> None:
         not math.isfinite(plan.minimum_effect_size)
         or not 0.0 < plan.minimum_effect_size
         or plan.power_method != "two_sided_normal_icc_design_effect"
+        or plan.power_scope != "single_comparison_approximation"
+        or plan.power_validation != "familywise_holm_power_unvalidated"
     ):
         raise ValueError("invalid frozen power method or effect size")
     if min(plan.fit_families, plan.tune_families, plan.assessment_families, plan.repeats) < 1:

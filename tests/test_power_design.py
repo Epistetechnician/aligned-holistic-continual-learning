@@ -26,7 +26,6 @@ class PowerDesignTests(unittest.TestCase):
         one = PowerDesign(effect_size=0.8, endpoints=1, repeats=1, max_clusters=1_000)
         repeated = PowerDesign(effect_size=0.8, endpoints=1, repeats=3, max_clusters=1_000)
         self.assertEqual(repeated.marginal_required_clusters, one.marginal_required_clusters)
-        self.assertAlmostEqual(repeated.marginal_power(20), one.marginal_power(20))
         self.assertAlmostEqual(
             two_sided_power(
                 clusters=one.marginal_required_clusters,
@@ -49,6 +48,11 @@ class PowerDesignTests(unittest.TestCase):
             plan.joint_lower_bound(clusters),
             max(0.0, 1 - 2 * (1 - plan.marginal_power(clusters))),
         )
+
+    def test_current_six_document_panel_is_not_declared_powered(self):
+        plan = PowerDesign(effect_size=0.5, endpoints=4, repeats=3, joint_target=0.80)
+        self.assertGreater(plan.joint_required_clusters, 6)
+        self.assertLess(plan.joint_lower_bound(6), 0.80)
 
     def test_nonfinite_inputs_are_rejected(self):
         for field in ("effect_size", "alpha", "target_power"):

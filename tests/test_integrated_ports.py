@@ -3,6 +3,7 @@
 # State slice: aligned-holistic-continual-learning-integrated-stack-v2.
 
 import json
+import hashlib
 import math
 import subprocess
 import unittest
@@ -18,6 +19,7 @@ from ahcl.adapters import (
     SAELensFeatureAdapter,
     TransformerLensActivationAdapter,
 )
+from ahcl.adapters.common import validate_imported_module, validate_local_custody_file
 from ahcl.aggregate import AggregateError, AggregateRow, reproduce_metrics, reproduce_metrics_from_predictions, reproduce_shuffled_r2
 from ahcl.checks import (
     CheckError,
@@ -47,6 +49,7 @@ from ahcl.preflight import (
 )
 from ahcl.qualification import QualificationThresholds, qualify_path
 from ahcl.review import (
+    Ed25519Verifier,
     ReviewError,
     ReviewReceipt,
     canonical_review_message,
@@ -84,6 +87,18 @@ class IntegratedPortTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             NeuronpediaClient().post_json("/closed", {})
 
+    def test_local_adapter_inputs_are_hash_and_symlink_bound(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            item = root / "weights.safetensors"
+            item.write_bytes(b"local-custody")
+            checksum = hashlib.sha256(item.read_bytes()).hexdigest()
+            self.assertEqual(validate_local_custody_file(item, checksum, "weights"), item.resolve())
+            link = root / "link.safetensors"
+            link.symlink_to(item)
+            with self.assertRaises(RuntimeError):
+                validate_local_custody_file(link, checksum, "weights")
+
     def test_submodule_commits_match_provenance_lock(self):
         lock = json.loads(Path("third_party/UPSTREAMS.lock.json").read_text(encoding="utf-8"))
         for item in lock["submodules"]:
@@ -114,6 +129,14 @@ class IntegratedPortTests(unittest.TestCase):
         altered["documents"][1] = dict(altered["documents"][1], author=altered["documents"][0]["author"])
         with self.assertRaises(ValueError):
             validate_corpus_manifest(altered, config=config)
+        altered = dict(manifest)
+        altered["documents"] = list(manifest["documents"])
+        altered["documents"][1] = dict(
+            altered["documents"][1],
+            family_ids=list(altered["documents"][0]["family_ids"]),
+        )
+        with self.assertRaises(ValueError):
+            validate_corpus_manifest(altered, config=config)
 
     def test_custody_manifest_hashes_regular_files(self):
         with TemporaryDirectory() as directory:
@@ -123,9 +146,26 @@ class IntegratedPortTests(unittest.TestCase):
             item.write_bytes(b"custodied")
             manifest = build_manifest(root, [item], state_slice="aligned-holistic-continual-learning-integrated-stack-v2")
             validate_manifest(manifest, expected_root=root)
+            duplicate = dict(manifest)
+            duplicate["files"] = list(manifest["files"]) + [dict(manifest["files"][0])]
+            duplicate["manifest_digest"] = packet_digest({key: value for key, value in duplicate.items() if key != "manifest_digest"})
+            with self.assertRaises(CustodyError):
+                validate_manifest(duplicate, expected_root=root)
             item.write_bytes(b"tampered")
             with self.assertRaises(CustodyError):
                 validate_manifest(manifest, expected_root=root)
+
+    def test_adapter_loader_identity_checks_are_local_and_exact(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            weights = root / "weights.safetensors"
+            weights.write_bytes(b"locked bytes")
+            checksum = hashlib.sha256(weights.read_bytes()).hexdigest()
+            self.assertEqual(validate_local_custody_file(weights, checksum, "weights"), weights.resolve())
+            with self.assertRaises(RuntimeError):
+                validate_local_custody_file(weights, "0" * 64, "weights")
+            with self.assertRaises(RuntimeError):
+                validate_imported_module(json, root, "test module")
 
     def test_review_packet_digest_is_bound(self):
         packet = build_review_packet(
@@ -216,6 +256,10 @@ class IntegratedPortTests(unittest.TestCase):
         altered["arms"] = list(reversed(altered["arms"]))
         with self.assertRaises(ValueError):
             validate_locked_study(altered)
+        altered = json.loads(json.dumps(config))
+        del altered["study"]["power_scope"]
+        with self.assertRaises(ValueError):
+            validate_locked_study(altered)
 
     def test_monitor_controller_gates_updates_and_behavioral_comparator(self):
         class CountingPolicy:
@@ -262,14 +306,17 @@ class IntegratedPortTests(unittest.TestCase):
 
     def test_independent_aggregates_match_locked_monitor(self):
         rows = observations("assessment", "fixed_update")
-        monitor = RidgeMonitor.fit(observations("fit", "fixed_update"), ridge=0.1)
+        fit_rows = observations("fit", "fixed_update")
+        monitor = RidgeMonitor.fit(fit_rows, ridge=0.1)
+        baseline_means = tuple(sum(row.outcomes[index] for row in fit_rows) / len(fit_rows) for index in range(len(AXES)))
         independent_rows = tuple(
             AggregateRow(str(row.family), row.split, 0, row.features, row.outcomes) for row in rows
         )
-        reproduced = reproduce_metrics(independent_rows, monitor.predict)
+        reproduced = reproduce_metrics(independent_rows, monitor.predict, baseline_means=baseline_means)
         reproduced_from_packet = reproduce_metrics_from_predictions(
             independent_rows,
             tuple(monitor.predict(row.features) for row in independent_rows),
+            baseline_means=baseline_means,
         )
         expected = metrics(rows, monitor)
         for index, axis in enumerate(AXES):
@@ -283,16 +330,18 @@ class IntegratedPortTests(unittest.TestCase):
 
     def test_independent_aggregates_reject_roster_corruption(self):
         rows = observations("assessment", "fixed_update")
-        monitor = RidgeMonitor.fit(observations("fit", "fixed_update"), ridge=0.1)
+        fit_rows = observations("fit", "fixed_update")
+        monitor = RidgeMonitor.fit(fit_rows, ridge=0.1)
+        baseline_means = tuple(sum(row.outcomes[index] for row in fit_rows) / len(fit_rows) for index in range(len(AXES)))
         packet = tuple(
             AggregateRow(str(row.family), row.split, 0, row.features, row.outcomes)
             for row in rows
         )
         with self.assertRaises(AggregateError):
-            reproduce_metrics(packet + (packet[0],), monitor.predict)
+            reproduce_metrics(packet + (packet[0],), monitor.predict, baseline_means=baseline_means)
         mixed = packet[:-1] + (AggregateRow(packet[-1].family_id, "fit", packet[-1].repeat, packet[-1].features, packet[-1].outcomes),)
         with self.assertRaises(AggregateError):
-            reproduce_metrics(mixed, monitor.predict)
+            reproduce_metrics(mixed, monitor.predict, baseline_means=baseline_means)
         expanded = tuple(
             AggregateRow(row.family_id, row.split, repeat, row.features, row.outcomes)
             for row in packet
@@ -300,7 +349,10 @@ class IntegratedPortTests(unittest.TestCase):
         )
         incomplete = expanded[:-1]
         with self.assertRaises(AggregateError):
-            reproduce_metrics(incomplete, monitor.predict)
+            reproduce_metrics(incomplete, monitor.predict, baseline_means=baseline_means)
+
+        with self.assertRaises(AggregateError):
+            reproduce_metrics(packet, monitor.predict, baseline_means=())
 
     def test_locked_trial_enforces_phase_order_and_disjoint_cohorts(self):
         plan = StatisticalPlan(
@@ -352,6 +404,36 @@ class IntegratedPortTests(unittest.TestCase):
             )
 
         self.assertEqual(canonical_review_message("0" * 64), "ahcl.review.packet.v1:" + "0" * 64)
+
+    def test_ed25519_receipt_verifies_canonical_packet_message(self):
+        try:
+            from cryptography.hazmat.primitives import serialization
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        except ImportError:
+            self.skipTest("cryptography is not installed in the test environment")
+        packet = {"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"}
+        locked_digest = packet_digest(packet)
+        private_key = Ed25519PrivateKey.generate()
+        public_key = private_key.public_key().public_bytes(
+            serialization.Encoding.Raw,
+            serialization.PublicFormat.Raw,
+        )
+        signature = private_key.sign(canonical_review_message(locked_digest).encode("ascii"))
+        receipt = ReviewReceipt(
+            locked_digest,
+            "independent-reviewer",
+            "ACCEPT",
+            signature.hex(),
+            public_key_id="reviewer-key-1",
+        )
+        verifier = Ed25519Verifier({"reviewer-key-1": public_key})
+        require_independent_accept(
+            receipt,
+            expected_packet_digest=locked_digest,
+            operator_id="operator",
+            verify_signature=verifier,
+            trusted_public_key_ids=verifier.trusted_key_ids,
+        )
 
     def test_execution_stays_closed_without_review(self):
         config = {"execution": {"enabled": False}}

@@ -101,9 +101,10 @@ def metrics(rows: Sequence[Observation], monitor: RidgeMonitor) -> dict[str, dic
 
 
 def shuffled_metrics(rows: Sequence[Observation], monitor: RidgeMonitor) -> dict[str, float]:
-    """Use a fixed permutation as the causal feature control."""
+    """Use a fixed family-level permutation as the causal feature control."""
 
-    permutation = list(range(len(rows)))
+    family_order = tuple(sorted(range(len(rows)), key=lambda index: rows[index].family))
+    permutation = list(family_order)
     state = 0xA1C0A1C
     for index in range(len(permutation) - 1, 0, -1):
         state = (1103515245 * state + 12345) & 0x7FFFFFFF

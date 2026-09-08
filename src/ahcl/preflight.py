@@ -27,6 +27,12 @@ def validate_upstream_lock(lock_path: Path) -> str:
         actual = subprocess.check_output(["git", "-C", str(submodule), "rev-parse", "HEAD"], text=True).strip()
         if actual != item["commit"]:
             raise PreflightError(f"submodule drift: {item['name']}")
+        status = subprocess.check_output(
+            ["git", "-C", str(submodule), "status", "--porcelain=v1"],
+            text=True,
+        ).strip()
+        if status:
+            raise PreflightError(f"submodule working tree drift: {item['name']}")
         for license_file in item["license_files"]:
             if not (submodule / license_file).is_file():
                 raise PreflightError(f"missing license file: {item['name']}:{license_file}")
@@ -110,7 +116,7 @@ def source_tree_digest(root: Path) -> str:
     """Hash the authored source, tests, configs, and protocol records."""
 
     authored = []
-    for directory in ("src", "tests", "configs", "docs"):
+    for directory in ("src", "tests", "configs", "docs", "crates"):
         for path in sorted((root / directory).rglob("*")):
             if path.is_file():
                 # The packet records this digest, so including the packet would
@@ -125,6 +131,10 @@ def source_tree_digest(root: Path) -> str:
                 ):
                     continue
                 authored.append({"path": str(relative), "sha256": file_digest(path)})
+    for name in ("AGENTS.md", "pyproject.toml", "Cargo.toml", "Cargo.lock"):
+        path = root / name
+        if path.is_file():
+            authored.append({"path": name, "sha256": file_digest(path)})
     return digest(authored)
 
 
@@ -192,9 +202,10 @@ def validate_corpus_manifest(corpus_manifest: dict[str, Any], *, config: dict[st
     documents = corpus_manifest["documents"]
     if not isinstance(documents, list) or len(documents) != 18:
         raise PreflightError("corpus manifest must contain exactly 18 documents")
-    required_document_fields = {"author", "id", "sha256", "split", "title"}
+    required_document_fields = {"author", "family_ids", "id", "sha256", "split", "title"}
     ids: set[int] = set()
     hashes: set[str] = set()
+    family_ids: dict[str, set[str]] = {split: set() for split in ("fit", "tune", "assessment")}
     for document in documents:
         if not isinstance(document, dict) or not required_document_fields.issubset(document):
             raise PreflightError("corpus document entry is incomplete")
@@ -211,6 +222,21 @@ def validate_corpus_manifest(corpus_manifest: dict[str, Any], *, config: dict[st
             raise PreflightError("corpus document hashes must be unique canonical SHA-256 values")
         if document["split"] not in {"fit", "tune", "assessment"}:
             raise PreflightError("corpus document split is invalid")
+        declared_families = document["family_ids"]
+        if (
+            not isinstance(declared_families, list)
+            or len(declared_families) != 8
+            or any(
+                not isinstance(family_id, str)
+                or not family_id.startswith(f"{document['split']}-")
+                or not family_id[len(document["split"]) + 1 :].isdigit()
+                for family_id in declared_families
+            )
+        ):
+            raise PreflightError("each document must declare eight split-bound family IDs")
+        if len(set(declared_families)) != len(declared_families):
+            raise PreflightError("document family IDs must be unique")
+        family_ids[document["split"]].update(declared_families)
         if any(not isinstance(document[field], str) or not document[field].strip() for field in ("author", "title")):
             raise PreflightError("corpus document author and title are required")
         ids.add(identifier)
@@ -220,7 +246,14 @@ def validate_corpus_manifest(corpus_manifest: dict[str, Any], *, config: dict[st
     split_counts = {split: sum(document.get("split") == split for document in documents) for split in ("fit", "tune", "assessment")}
     if split_counts != {"fit": 6, "tune": 6, "assessment": 6}:
         raise PreflightError("corpus split roster mismatch")
+    if any(
+        len(values) != 48 or values != {f"{split}-{index:03d}" for index in range(48)}
+        for split, values in family_ids.items()
+    ):
+        raise PreflightError("corpus family mapping must cover exactly 48 IDs per split")
     if config is not None:
+        if config.get("corpus", {}).get("manifest_digest") != corpus_manifest["manifest_digest"]:
+            raise PreflightError("config corpus manifest identity mismatch")
         tokenizer = corpus_manifest["tokenizer"]
         if (tokenizer.get("name"), tokenizer.get("revision")) != (
             config["model"]["id"],

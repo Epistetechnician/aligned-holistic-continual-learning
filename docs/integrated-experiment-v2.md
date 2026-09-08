@@ -35,11 +35,13 @@ The complete file list is bound by the external manifest digest recorded in
 `configs/integrated-stack-v2.json`.
 
 The corpus is 18 Project Gutenberg documents listed in
-`configs/corpus-manifest.v2.json`. The six fit, six tune, and six
-assessment documents have disjoint authors. The manifest must record the exact
-download URL, normalized bytes hash, tokenizer revision, tokenization policy,
-and owner-only custody path. The corpus bytes never enter Git. The external
-custody manifest currently binds 29 files and has digest
+`configs/corpus-manifest.v2.json`. The six fit, six tune, and six assessment
+documents have disjoint authors. Each document owns eight explicit family IDs;
+the validator requires the complete `fit-000` through `assessment-047` roster
+and binds each document byte hash to custody. The manifest must record the
+exact download URL, normalized bytes hash, tokenizer revision, tokenization
+policy, and owner-only custody path. The corpus bytes never enter Git. The
+external custody manifest currently binds 29 files and has digest
 `059babda7993b9cb2625e1acba8c836ff1e2d8539eef9ebac1f10b29e9ba27a1`.
 
 ## Dependency lanes
@@ -62,8 +64,10 @@ shared aggregate schema:
   receives aggregate feature metadata only; it is not an evidence authority.
 
 The adapters in `src/ahcl/adapters/` prevent these lanes from sharing Python
-module state. Trial packets exchange canonical IDs, tensors during one run,
-and aggregate metrics after validation.
+module state. Model and SAE loading requires an exact revision, a caller-owned
+local custody root, a matching weight digest, and an imported module location
+inside the pinned checkout. Trial packets exchange canonical IDs, tensors
+during one run, and aggregate metrics after validation.
 
 ## Update and behavior endpoints
 
@@ -125,10 +129,12 @@ repeats per family. Fit rows select the monitor and any feature candidates.
 Tune rows lock feature maps, layers, thresholds, update hyperparameters, and
 the predictor. Assessment rows are unread until the lock digest exists.
 
-The family-wise alpha is 0.05 with Holm correction. The design declares a
-minimum standardized effect of 0.50 and checks at least 0.80 two-sided normal
-approximation power after the ICC 0.50 design effect for three repeats. Fixed
-controls are activation-only, text-only, exact-copy no-op, shuffled-donor,
+The family-wise alpha is 0.05 with Holm correction. The design records a
+minimum standardized effect of 0.50 and a single-comparison two-sided normal
+approximation after the ICC 0.50 design effect for three repeats. This is a
+design target, not a validated family-wise power claim; the Holm joint-power
+calculation remains an independent review blocker. Fixed controls are
+activation-only, text-only, exact-copy no-op, shuffled-donor,
 constant-donor, and matched-donor controls. Missing or non-finite rows fail
 closed; there is no attrition replacement.
 
@@ -136,10 +142,12 @@ The machine-readable version of this contract is in the `study` and
 `controls` fields of `configs/integrated-stack-v2.json`. `src/ahcl/lifecycle.py`
 enforces phase order and cohort disjointness without retaining raw rows.
 `src/ahcl/aggregate.py` independently recomputes row-level R², baseline R²,
-sign agreement, and the fixed shuffled control for validator use during the
-72-hour custody window. Its prediction-bound entry point accepts stored
-predictions directly, so the validator does not need to import the fitted
-monitor or model runtime.
+sign agreement, and the fixed family-level shuffled control for validator use
+during the 72-hour custody window. The constant baseline is supplied as a
+fit-only parameter vector and validated against the outcome width; it is never
+estimated from assessment outcomes. Its prediction-bound entry point accepts
+stored predictions directly, so the validator does not need to import the
+fitted monitor or model runtime.
 
 ## Review and execution gates
 

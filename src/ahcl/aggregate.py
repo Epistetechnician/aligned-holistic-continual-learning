@@ -59,6 +59,12 @@ def _validate_roster(rows: Sequence[AggregateRow]) -> None:
         raise AggregateError("aggregate families have incomplete repeat sets")
 
 
+def _family_sort_key(family_id: str) -> tuple[int, int | str]:
+    """Sort numeric family IDs numerically and opaque IDs lexically."""
+
+    return (0, int(family_id)) if family_id.isdigit() else (1, family_id)
+
+
 def _r2(observed: Sequence[float], predicted: Sequence[float]) -> float:
     if not observed or len(observed) != len(predicted):
         raise AggregateError("observed and predicted rows must have equal nonzero length")
@@ -75,20 +81,24 @@ def _sign(value: float) -> int:
 def reproduce_metrics(
     rows: Iterable[AggregateRow],
     predict: Callable[[Any], Sequence[float]],
+    *,
+    baseline_means: Sequence[float],
 ) -> dict[str, dict[str, float]]:
-    """Recalculate R², constant-baseline R², and sign agreement."""
+    """Recalculate metrics using constants locked from the fit cohort."""
 
     materialized = tuple(rows)
     _validate_roster(materialized)
     predictions = tuple(tuple(float(value) for value in predict(row.features)) for row in materialized)
-    return reproduce_metrics_from_predictions(materialized, predictions)
+    return reproduce_metrics_from_predictions(materialized, predictions, baseline_means=baseline_means)
 
 
 def reproduce_metrics_from_predictions(
     rows: Iterable[AggregateRow],
     predictions: Iterable[Sequence[float]],
+    *,
+    baseline_means: Sequence[float],
 ) -> dict[str, dict[str, float]]:
-    """Recalculate aggregates from predictions already recorded in custody."""
+    """Recalculate aggregates with a fit-only baseline parameter vector."""
 
     materialized = tuple(rows)
     prediction_rows = tuple(tuple(float(value) for value in row) for row in predictions)
@@ -98,6 +108,9 @@ def reproduce_metrics_from_predictions(
     width = len(materialized[0].outcomes)
     if width == 0 or any(len(row.outcomes) != width for row in materialized):
         raise AggregateError("outcome axes must have one fixed nonzero width")
+    baseline = tuple(float(value) for value in baseline_means)
+    if len(baseline) != width or any(not math.isfinite(value) for value in baseline):
+        raise AggregateError("fit-only baseline means must be finite and match outcome width")
     if any(len(values) != width for values in prediction_rows):
         raise AggregateError("predictor output width does not match outcomes")
     if any(not math.isfinite(value) for row in materialized for value in row.outcomes):
@@ -108,10 +121,10 @@ def reproduce_metrics_from_predictions(
     for axis in range(width):
         observed = [row.outcomes[axis] for row in materialized]
         predicted = [row[axis] for row in prediction_rows]
-        baseline = [sum(observed) / len(observed)] * len(observed)
+        constant = [baseline[axis]] * len(observed)
         result[str(axis)] = {
             "r2": _r2(observed, predicted),
-            "baseline_r2": _r2(observed, baseline),
+            "baseline_r2": _r2(observed, constant),
             "sign_agreement": sum(_sign(a) == _sign(p) for a, p in zip(observed, predicted)) / len(observed),
         }
     return result
@@ -131,6 +144,24 @@ def fixed_permutation(size: int) -> tuple[int, ...]:
     return tuple(permutation)
 
 
+def fixed_family_permutation(rows: Sequence[AggregateRow]) -> tuple[int, ...]:
+    """Return a locked donor index for each row while preserving repeat blocks."""
+
+    materialized = tuple(rows)
+    _validate_roster(materialized)
+    families = tuple(sorted({row.family_id for row in materialized}, key=_family_sort_key))
+    indices = {
+        (row.family_id, row.repeat): index
+        for index, row in enumerate(materialized)
+    }
+    family_permutation = fixed_permutation(len(families))
+    donor_family = {
+        family: families[family_permutation[position]]
+        for position, family in enumerate(families)
+    }
+    return tuple(indices[(donor_family[row.family_id], row.repeat)] for row in materialized)
+
+
 def reproduce_shuffled_r2(
     rows: Iterable[AggregateRow],
     predict: Callable[[Any], Sequence[float]],
@@ -139,7 +170,7 @@ def reproduce_shuffled_r2(
 
     materialized = tuple(rows)
     _validate_roster(materialized)
-    permutation = fixed_permutation(len(materialized))
+    permutation = fixed_family_permutation(materialized)
     predictions = tuple(tuple(float(value) for value in predict(materialized[index].features)) for index in permutation)
     width = len(materialized[0].outcomes)
     if width == 0 or any(len(row.outcomes) != width for row in materialized):

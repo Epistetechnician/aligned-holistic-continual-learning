@@ -6,7 +6,7 @@ State slice: aligned-holistic-continual-learning-integrated-stack-v2.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Mapping
+from typing import Mapping
 
 from .canonical import digest
 
@@ -49,13 +49,17 @@ class Ed25519Verifier:
 
     def __call__(self, receipt: ReviewReceipt, message: str) -> bool:
         try:
+            from cryptography.exceptions import InvalidSignature
             from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        except ImportError:
+            return False
+        try:
             key_material = self._public_keys[receipt.public_key_id]
             public_key = bytes.fromhex(key_material) if isinstance(key_material, str) else key_material
             signature = bytes.fromhex(receipt.signature)
             Ed25519PublicKey.from_public_bytes(public_key).verify(signature, message.encode("ascii"))
             return True
-        except (KeyError, ValueError, TypeError, ImportError):
+        except (KeyError, ValueError, TypeError, InvalidSignature):
             return False
 
 
@@ -68,7 +72,7 @@ def require_independent_accept(
     *,
     expected_packet_digest: str,
     operator_id: str,
-    verify_signature: Callable[[ReviewReceipt, str], bool] | None = None,
+    verify_signature: Ed25519Verifier | None = None,
     trusted_public_key_ids: frozenset[str] | None = None,
 ) -> None:
     if receipt.decision != "ACCEPT":
@@ -81,9 +85,11 @@ def require_independent_accept(
         raise ReviewError("review receipt has no signature")
     if receipt.signature_scheme != "Ed25519" or not receipt.public_key_id:
         raise ReviewError("review receipt must identify an Ed25519 public key")
-    if trusted_public_key_ids is None or receipt.public_key_id not in trusted_public_key_ids:
+    if not isinstance(verify_signature, Ed25519Verifier):
+        raise ReviewError("the concrete Ed25519 verifier is required")
+    if trusted_public_key_ids != verify_signature.trusted_key_ids:
+        raise ReviewError("trusted reviewer registry does not match the verifier")
+    if receipt.public_key_id not in verify_signature.trusted_key_ids:
         raise ReviewError("reviewer public key is not in the trusted registry")
-    if verify_signature is None:
-        raise ReviewError("an independent Ed25519 verifier is required")
     if not verify_signature(receipt, canonical_review_message(expected_packet_digest)):
         raise ReviewError("review signature verification failed")

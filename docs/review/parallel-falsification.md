@@ -113,3 +113,37 @@ ACCEPT, nor used to authorize the operator to sign its own receipt.
 Scientific conclusions remain absent. Existing contract tests can establish
 local software behavior only; they cannot establish feature stability, causal
 scrubbing validity, continual-learning benefit, alignment, or selective repair.
+
+## Local resolution log
+
+The following implementation changes close software-contract portions of the
+findings; they do not convert this audit into an independent ACCEPT:
+
+- Finding 1: `review.py` now signs a canonical packet message, requires a
+  trusted public-key registry, and `execution.py` binds the reviewed packet
+  digest and configuration at launch. A real external reviewer key registry
+  and receipt are still absent.
+- Finding 2: `lifecycle.py` deep-copies locked inputs, verifies configuration
+  and predictor payload digests, and consumes assessment on first entry,
+  including failed attempts. A separately reviewed tune receipt is still an
+  execution prerequisite.
+- Finding 3: the corpus manifest now requires unique IDs, canonical hashes,
+  and eight explicit split-bound family IDs per document; the complete
+  48-family-per-split roster is checked. `validate_corpus_custody` binds every
+  document file and byte hash to the external manifest. Tokenized segment
+  ancestry, contained-passage exclusion, and contamination analysis remain
+  open scientific work.
+- Finding 5: aggregate rows now require a complete family/repeat roster,
+  constant baselines must be supplied from fit-only parameters, and the
+  shuffled control permutes donor families while preserving repeat identity.
+  Uncertainty and multiplicity aggregation remain outside this helper.
+- Finding 8: non-finite and empty Holm inputs fail closed.
+
+Findings 4 and 6 remain open. Finding 7 is partially resolved: the
+TransformerLens and SAELens adapters now require a caller-supplied source
+checkout, exact revision, local custody root, and weight digest before loading;
+the NNsight and circuit-tracer model paths still require the same local-byte
+boundary. The declared power is still a single-comparison approximation, and
+runtime distribution bytes are not yet attested at launch. Model execution and
+assessment remain closed until those items receive a fresh independent review
+of the exact final bytes.

@@ -26,8 +26,10 @@ limit) are positive integers. The search fails closed when the requested count
 exceeds `max_clusters`.
 
 This planner is a design calculation. It does not establish that any current
-six-document panel or fit/tune/assessment split has sufficient power, and it
-does not authorize model execution or scientific assessment.
+six-document panel or fit/tune/assessment split has sufficient power. For the
+current four-axis, three-repeat design with a standardized effect of 0.50, the
+conservative joint lower bound requires more than six independent documents.
+The planner does not authorize model execution or scientific assessment.
 
 For an illustrative design with standardized document effect `0.5`, four
 endpoints, and three recorded repeats, the planner yields per-contrast

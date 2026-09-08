@@ -1,27 +1,315 @@
 {
   "custody_root": "AHCL_CUSTODY_ROOT/corpus",
   "documents": [
-    {"author": "Jane Austen", "id": 1342, "sha256": "3f6bb9d6f78e0293b56acd4714dd68cb7d6d1d293402031ce9d5a216bcaf9d75", "split": "fit", "title": "Pride and Prejudice"},
-    {"author": "Mary Shelley", "id": 84, "sha256": "7810cd483cffcf2cc8a1d8f0d5807931e69d4f48cd14149b8c76f88af82fead3", "split": "fit", "title": "Frankenstein"},
-    {"author": "Lewis Carroll", "id": 11, "sha256": "01b38ea4c710a84bc18d0bd41271a5a1a92b94e97b2812f4dece97d4a694725e", "split": "fit", "title": "Alice's Adventures in Wonderland"},
-    {"author": "Arthur Conan Doyle", "id": 1661, "sha256": "922e2a12ccb43a4c9544c260b2166c6ad2097aeb5957faeee113f173bb857cd0", "split": "fit", "title": "The Adventures of Sherlock Holmes"},
-    {"author": "Charles Dickens", "id": 46, "sha256": "8c36b93723d454982df045ec0efdf2664e5a48e6b5e2f670e883575f75ad0cc8", "split": "fit", "title": "A Christmas Carol"},
-    {"author": "Bram Stoker", "id": 345, "sha256": "96cd16eacdbfebae8fdda5591f66e0cc8ee76be18e0cd1aca02bc00615782d28", "split": "fit", "title": "Dracula"},
-    {"author": "Leo Tolstoy", "id": 2600, "sha256": "2d5bb2ad5f422765e714617e21fa31bbaf8958aa79682c86fca6660fcc5d1b2b", "split": "tune", "title": "War and Peace"},
-    {"author": "Fyodor Dostoevsky", "id": 2554, "sha256": "d139120965c81f10e3f747d891a49babdb49d986b25f7ab25299b1bbf4731146", "split": "tune", "title": "Crime and Punishment"},
-    {"author": "Oscar Wilde", "id": 174, "sha256": "38f36b510417177aa87a6a24c968e3ec63a447b7df36a9c1a7c5a3f2d9e51547", "split": "tune", "title": "The Picture of Dorian Gray"},
-    {"author": "Herman Melville", "id": 2701, "sha256": "907420db6c4b68c70e2988cd2ad9c8cf79138667a01b63376d18dd17fef1a18b", "split": "tune", "title": "Moby-Dick"},
-    {"author": "Mark Twain", "id": 76, "sha256": "d617a37aa7ae1e1a93dcde2634db2bccb86824e31e29a55230bdbf77d6872d59", "split": "tune", "title": "Adventures of Huckleberry Finn"},
-    {"author": "Niccolo Machiavelli", "id": 1232, "sha256": "33496a305f7a4b933784fb5aec95f920fbc3d4687794817e4cc444aa6578d2e4", "split": "tune", "title": "The Prince"},
-    {"author": "Franz Kafka", "id": 5200, "sha256": "0933283a19a4daaef0d412e8f69c74fae126b0a946cb74b8f3c783a8e869830d", "split": "assessment", "title": "The Metamorphosis"},
-    {"author": "Jonathan Swift", "id": 1080, "sha256": "331340f2ada84a7f79d756a344f6ce7d78026cd1d2359d33f79ca4a13d9f1519", "split": "assessment", "title": "A Modest Proposal"},
-    {"author": "Alexandre Dumas", "id": 1184, "sha256": "64f8d5cfa51fcecb904abf7312d395d512a71817e7359b91288beb50517c3836", "split": "assessment", "title": "The Count of Monte Cristo"},
-    {"author": "Charlotte Bronte", "id": 1260, "sha256": "13414dee2951c3ee731d76d2ffd822016b2479c892162760c5d0eb2aa5fa7631", "split": "assessment", "title": "Jane Eyre"},
-    {"author": "Miguel de Cervantes Saavedra", "id": 996, "sha256": "2864143e9addf498c1c5fd585db4a1ff3e06651c344cddf0931342f1a0ce24d4", "split": "assessment", "title": "Don Quixote"},
-    {"author": "Homer", "id": 1727, "sha256": "ffbdb29c3dda284b65c11243db1a98167826a70c81bca2ed4b6232f86c905fb9", "split": "assessment", "title": "The Odyssey"}
+    {
+      "author": "Jane Austen",
+      "id": 1342,
+      "sha256": "3f6bb9d6f78e0293b56acd4714dd68cb7d6d1d293402031ce9d5a216bcaf9d75",
+      "split": "fit",
+      "title": "Pride and Prejudice",
+      "family_ids": [
+        "fit-000",
+        "fit-001",
+        "fit-002",
+        "fit-003",
+        "fit-004",
+        "fit-005",
+        "fit-006",
+        "fit-007"
+      ]
+    },
+    {
+      "author": "Mary Shelley",
+      "id": 84,
+      "sha256": "7810cd483cffcf2cc8a1d8f0d5807931e69d4f48cd14149b8c76f88af82fead3",
+      "split": "fit",
+      "title": "Frankenstein",
+      "family_ids": [
+        "fit-008",
+        "fit-009",
+        "fit-010",
+        "fit-011",
+        "fit-012",
+        "fit-013",
+        "fit-014",
+        "fit-015"
+      ]
+    },
+    {
+      "author": "Lewis Carroll",
+      "id": 11,
+      "sha256": "01b38ea4c710a84bc18d0bd41271a5a1a92b94e97b2812f4dece97d4a694725e",
+      "split": "fit",
+      "title": "Alice's Adventures in Wonderland",
+      "family_ids": [
+        "fit-016",
+        "fit-017",
+        "fit-018",
+        "fit-019",
+        "fit-020",
+        "fit-021",
+        "fit-022",
+        "fit-023"
+      ]
+    },
+    {
+      "author": "Arthur Conan Doyle",
+      "id": 1661,
+      "sha256": "922e2a12ccb43a4c9544c260b2166c6ad2097aeb5957faeee113f173bb857cd0",
+      "split": "fit",
+      "title": "The Adventures of Sherlock Holmes",
+      "family_ids": [
+        "fit-024",
+        "fit-025",
+        "fit-026",
+        "fit-027",
+        "fit-028",
+        "fit-029",
+        "fit-030",
+        "fit-031"
+      ]
+    },
+    {
+      "author": "Charles Dickens",
+      "id": 46,
+      "sha256": "8c36b93723d454982df045ec0efdf2664e5a48e6b5e2f670e883575f75ad0cc8",
+      "split": "fit",
+      "title": "A Christmas Carol",
+      "family_ids": [
+        "fit-032",
+        "fit-033",
+        "fit-034",
+        "fit-035",
+        "fit-036",
+        "fit-037",
+        "fit-038",
+        "fit-039"
+      ]
+    },
+    {
+      "author": "Bram Stoker",
+      "id": 345,
+      "sha256": "96cd16eacdbfebae8fdda5591f66e0cc8ee76be18e0cd1aca02bc00615782d28",
+      "split": "fit",
+      "title": "Dracula",
+      "family_ids": [
+        "fit-040",
+        "fit-041",
+        "fit-042",
+        "fit-043",
+        "fit-044",
+        "fit-045",
+        "fit-046",
+        "fit-047"
+      ]
+    },
+    {
+      "author": "Leo Tolstoy",
+      "id": 2600,
+      "sha256": "2d5bb2ad5f422765e714617e21fa31bbaf8958aa79682c86fca6660fcc5d1b2b",
+      "split": "tune",
+      "title": "War and Peace",
+      "family_ids": [
+        "tune-000",
+        "tune-001",
+        "tune-002",
+        "tune-003",
+        "tune-004",
+        "tune-005",
+        "tune-006",
+        "tune-007"
+      ]
+    },
+    {
+      "author": "Fyodor Dostoevsky",
+      "id": 2554,
+      "sha256": "d139120965c81f10e3f747d891a49babdb49d986b25f7ab25299b1bbf4731146",
+      "split": "tune",
+      "title": "Crime and Punishment",
+      "family_ids": [
+        "tune-008",
+        "tune-009",
+        "tune-010",
+        "tune-011",
+        "tune-012",
+        "tune-013",
+        "tune-014",
+        "tune-015"
+      ]
+    },
+    {
+      "author": "Oscar Wilde",
+      "id": 174,
+      "sha256": "38f36b510417177aa87a6a24c968e3ec63a447b7df36a9c1a7c5a3f2d9e51547",
+      "split": "tune",
+      "title": "The Picture of Dorian Gray",
+      "family_ids": [
+        "tune-016",
+        "tune-017",
+        "tune-018",
+        "tune-019",
+        "tune-020",
+        "tune-021",
+        "tune-022",
+        "tune-023"
+      ]
+    },
+    {
+      "author": "Herman Melville",
+      "id": 2701,
+      "sha256": "907420db6c4b68c70e2988cd2ad9c8cf79138667a01b63376d18dd17fef1a18b",
+      "split": "tune",
+      "title": "Moby-Dick",
+      "family_ids": [
+        "tune-024",
+        "tune-025",
+        "tune-026",
+        "tune-027",
+        "tune-028",
+        "tune-029",
+        "tune-030",
+        "tune-031"
+      ]
+    },
+    {
+      "author": "Mark Twain",
+      "id": 76,
+      "sha256": "d617a37aa7ae1e1a93dcde2634db2bccb86824e31e29a55230bdbf77d6872d59",
+      "split": "tune",
+      "title": "Adventures of Huckleberry Finn",
+      "family_ids": [
+        "tune-032",
+        "tune-033",
+        "tune-034",
+        "tune-035",
+        "tune-036",
+        "tune-037",
+        "tune-038",
+        "tune-039"
+      ]
+    },
+    {
+      "author": "Niccolo Machiavelli",
+      "id": 1232,
+      "sha256": "33496a305f7a4b933784fb5aec95f920fbc3d4687794817e4cc444aa6578d2e4",
+      "split": "tune",
+      "title": "The Prince",
+      "family_ids": [
+        "tune-040",
+        "tune-041",
+        "tune-042",
+        "tune-043",
+        "tune-044",
+        "tune-045",
+        "tune-046",
+        "tune-047"
+      ]
+    },
+    {
+      "author": "Franz Kafka",
+      "id": 5200,
+      "sha256": "0933283a19a4daaef0d412e8f69c74fae126b0a946cb74b8f3c783a8e869830d",
+      "split": "assessment",
+      "title": "The Metamorphosis",
+      "family_ids": [
+        "assessment-000",
+        "assessment-001",
+        "assessment-002",
+        "assessment-003",
+        "assessment-004",
+        "assessment-005",
+        "assessment-006",
+        "assessment-007"
+      ]
+    },
+    {
+      "author": "Jonathan Swift",
+      "id": 1080,
+      "sha256": "331340f2ada84a7f79d756a344f6ce7d78026cd1d2359d33f79ca4a13d9f1519",
+      "split": "assessment",
+      "title": "A Modest Proposal",
+      "family_ids": [
+        "assessment-008",
+        "assessment-009",
+        "assessment-010",
+        "assessment-011",
+        "assessment-012",
+        "assessment-013",
+        "assessment-014",
+        "assessment-015"
+      ]
+    },
+    {
+      "author": "Alexandre Dumas",
+      "id": 1184,
+      "sha256": "64f8d5cfa51fcecb904abf7312d395d512a71817e7359b91288beb50517c3836",
+      "split": "assessment",
+      "title": "The Count of Monte Cristo",
+      "family_ids": [
+        "assessment-016",
+        "assessment-017",
+        "assessment-018",
+        "assessment-019",
+        "assessment-020",
+        "assessment-021",
+        "assessment-022",
+        "assessment-023"
+      ]
+    },
+    {
+      "author": "Charlotte Bronte",
+      "id": 1260,
+      "sha256": "13414dee2951c3ee731d76d2ffd822016b2479c892162760c5d0eb2aa5fa7631",
+      "split": "assessment",
+      "title": "Jane Eyre",
+      "family_ids": [
+        "assessment-024",
+        "assessment-025",
+        "assessment-026",
+        "assessment-027",
+        "assessment-028",
+        "assessment-029",
+        "assessment-030",
+        "assessment-031"
+      ]
+    },
+    {
+      "author": "Miguel de Cervantes Saavedra",
+      "id": 996,
+      "sha256": "2864143e9addf498c1c5fd585db4a1ff3e06651c344cddf0931342f1a0ce24d4",
+      "split": "assessment",
+      "title": "Don Quixote",
+      "family_ids": [
+        "assessment-032",
+        "assessment-033",
+        "assessment-034",
+        "assessment-035",
+        "assessment-036",
+        "assessment-037",
+        "assessment-038",
+        "assessment-039"
+      ]
+    },
+    {
+      "author": "Homer",
+      "id": 1727,
+      "sha256": "ffbdb29c3dda284b65c11243db1a98167826a70c81bca2ed4b6232f86c905fb9",
+      "split": "assessment",
+      "title": "The Odyssey",
+      "family_ids": [
+        "assessment-040",
+        "assessment-041",
+        "assessment-042",
+        "assessment-043",
+        "assessment-044",
+        "assessment-045",
+        "assessment-046",
+        "assessment-047"
+      ]
+    }
   ],
   "schema": "ahcl.corpus.manifest.v1",
-  "manifest_digest": "5961c550e1f39cbfc4a55e11a7a8f7783c38401357fa6332f6cf88ab298a90c6",
+  "manifest_digest": "049f6af155073b587fe6c31db342700be15000deccfbf61cbc9ff99d55c3992c",
   "selection_rule": "one public-domain document per author; six documents per split",
   "source": "https://www.gutenberg.org/",
   "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",

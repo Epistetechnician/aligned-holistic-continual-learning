@@ -21,6 +21,8 @@
     "multiplicity": "Holm",
     "minimum_standardized_effect": 0.5,
     "power_method": "two_sided_normal_icc_design_effect",
+    "power_scope": "single_comparison_approximation",
+    "power_validation": "familywise_holm_power_unvalidated",
     "missingness": "fail_closed",
     "attrition": "zero",
     "prediction_lock": "fit_predictor_and_tune_thresholds_before_assessment"
@@ -84,10 +86,11 @@
   },
   "corpus": {
     "source": "Project Gutenberg public-domain prose",
-    "selection": "18 documents, author-disjoint fit/tune/assessment families",
+    "selection": "18 documents, author-disjoint splits, eight explicit families per document",
     "manifest": "external custody manifest required",
     "sha256": "ca333265062744326f2ed9f15a3f28de5c6a15d04c8b1e196d68b0ddf6a1b4cf",
-    "status": "custodied_pending_independent_review"
+    "status": "custodied_pending_independent_review",
+    "manifest_digest": "049f6af155073b587fe6c31db342700be15000deccfbf61cbc9ff99d55c3992c"
   },
   "custody": {
     "root_env": "AHCL_CUSTODY_ROOT",
