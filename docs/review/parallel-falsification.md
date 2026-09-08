@@ -8,6 +8,12 @@ not an external protocol/execution authorization and not a signed ACCEPT.
 No model, provider, corpus download, or assessment was run. Other workstreams
 were modifying measurement helpers; those helpers are outside this snapshot.
 
+Historical status: the receipt and launch-boundary findings below describe the
+pre-canonical state. The current contract supersedes Finding 1 with
+`verified_review.verify_launch_receipt` as the sole verifier and with
+immutable readiness and launch packet roles. This audit remains evidence of
+the earlier rejection, not a current implementation description.
+
 ## Findings and rejection criteria
 
 1. **Critical: execution authority is caller supplied.**

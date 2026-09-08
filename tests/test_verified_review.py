@@ -22,7 +22,8 @@ class VerificationTests(unittest.TestCase):
         from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
         self.key = Ed25519PrivateKey.generate()
         self.registry = {'test': TrustedReviewer('reviewer', self.key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw))}
-        self.packet = {'schema':'ahcl.review.packet.v1', 'state_slice':'test', 'config':{'state_slice':'test'},
+        self.packet = {'schema':'ahcl.review.packet.v1', 'packet_role':'launch', 'state_slice':'test',
+                       'config':{'state_slice':'test', 'execution':{'enabled':True}},
                        **{k:'a'*64 for k in ('source_digest','upstream_lock_digest','dependency_lanes_digest','corpus_manifest_digest')}}
         self.packet['packet_digest'] = digest(self.packet)
         self.receipt = {'packet_digest':self.packet['packet_digest'], 'reviewer_id':'reviewer',

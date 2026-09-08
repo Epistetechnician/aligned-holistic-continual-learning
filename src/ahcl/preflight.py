@@ -7,8 +7,9 @@ from __future__ import annotations
 
 import json
 import subprocess
+from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from .canonical import digest, file_digest
 
@@ -286,11 +287,18 @@ def build_review_packet(
     corpus_manifest: dict[str, Any],
     source_digest: str,
     dependency_lanes: dict[str, Any] | None = None,
+    packet_role: str = "readiness",
 ) -> dict[str, Any]:
-    """Bind every identity needed before a reviewer may accept execution."""
+    """Bind every identity needed before a reviewer may accept execution.
+
+    The tracked packet is a readiness artifact. A launch artifact is derived
+    immutably with :func:`build_launch_packet` after the readiness inputs are
+    frozen and reviewed.
+    """
 
     packet = {
         "schema": "ahcl.review.packet.v1",
+        "packet_role": packet_role,
         "state_slice": config["state_slice"],
         "config": config,
         "upstream_lock_digest": digest(upstream_lock),
@@ -302,9 +310,26 @@ def build_review_packet(
     return packet
 
 
-def validate_review_packet(packet: dict[str, Any]) -> None:
+def build_launch_packet(readiness_packet: Mapping[str, Any]) -> dict[str, Any]:
+    """Derive an enabled launch packet without mutating the readiness packet."""
+
+    readiness = deepcopy(dict(readiness_packet))
+    validate_review_packet(readiness, expected_role="readiness")
+    config = readiness["config"]
+    if not isinstance(config.get("execution"), dict):
+        raise PreflightError("readiness packet execution configuration is missing")
+    launch = deepcopy(readiness)
+    launch["packet_role"] = "launch"
+    launch["config"]["execution"]["enabled"] = True
+    launch["packet_digest"] = digest({key: value for key, value in launch.items() if key != "packet_digest"})
+    validate_review_packet(launch, expected_role="launch")
+    return launch
+
+
+def validate_review_packet(packet: dict[str, Any], *, expected_role: str | None = None) -> None:
     required = {
         "schema",
+        "packet_role",
         "state_slice",
         "config",
         "upstream_lock_digest",
@@ -315,12 +340,23 @@ def validate_review_packet(packet: dict[str, Any]) -> None:
     }
     if set(packet) != required or packet["schema"] != "ahcl.review.packet.v1":
         raise PreflightError("review packet schema mismatch")
+    if packet["packet_role"] not in {"readiness", "launch"}:
+        raise PreflightError("review packet role is invalid")
+    if expected_role is not None and packet["packet_role"] != expected_role:
+        raise PreflightError("review packet role does not match the required artifact")
     if (
         not isinstance(packet["config"], dict)
         or not packet["state_slice"]
         or packet["config"].get("state_slice") != packet["state_slice"]
     ):
         raise PreflightError("review packet state slice mismatch")
+    execution = packet["config"].get("execution")
+    if not isinstance(execution, dict) or type(execution.get("enabled")) is not bool:
+        raise PreflightError("review packet execution flag is not a boolean")
+    if packet["packet_role"] == "readiness" and execution["enabled"]:
+        raise PreflightError("readiness packet must keep execution disabled")
+    if packet["packet_role"] == "launch" and not execution["enabled"]:
+        raise PreflightError("launch packet must enable execution")
     for field in ("upstream_lock_digest", "dependency_lanes_digest", "corpus_manifest_digest", "source_digest"):
         value = packet[field]
         if not isinstance(value, str) or len(value) != 64 or any(character not in "0123456789abcdef" for character in value):

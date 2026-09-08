@@ -49,12 +49,13 @@ See `power-design.md`. No current six-document assessment is declared powered.
 
 Status: **not qualified; no independent execution ACCEPT**.
 
-The exact packet has now been regenerated after the source and configuration
-bytes settled. Read-only preflight passes with status
+The exact readiness packet has now been regenerated after the source and
+configuration bytes settled. Read-only preflight passes with status
 `READY_FOR_INDEPENDENT_REVIEW`; model execution remains disabled. The known
 external custody path is validated explicitly rather than inferred from an
-unset environment variable. The active interpreter and installed model
-packages still do not match the configured runtime lane.
+unset environment variable. Host qualification is complete on the dedicated
+Linux x86_64 givemeanode lane, but no model execution or assessment has been
+performed.
 
 After any authorized source, configuration, lane, or protocol edit, rebuild
 the tracked packet only after the checkout is stable:
@@ -85,32 +86,25 @@ installed distribution files and imported module bytes, and emits canonical
 JSON to stdout. Each distribution roster is rooted at the selected environment
 so executable files outside `site-packages` are covered too. Retain those
 documents in the external review/custody system; do not commit them. The
-modern lane is attested at
-`2593b1d04d85f2a652f6374eb18c6bc690452fb5bcbcc1a4495326d8bd04ef6e`, and the
-circuit-tracer lane at
-`c5cbd67d3869abbfa29d8d36fd8ed3b23c3644d20d3e65440d7934f1d638ac1e`. The
-ACDC lane remains blocked on this macOS arm64 host because its locked Torch
-1.13.1 requirement has no matching Python 3.11.11 wheel. The integrated
-preflight also reports the current family-wise planning outcome as
+qualified ACDC lane is Python `3.11.11` with Torch `1.13.1`, and the qualified
+NNsight/circuit-tracer lane is Python `3.11.11` with the pinned NNsight source
+commit and a native extension built from that checkout. The current lane
+attestation digests are ACDC
+`3f95e7e684c2ff81e04785fa6552f08b50cfbd74c518b2ba12fe408c4f5a7cd3` and
+NNsight/circuit-tracer
+`a939a5b8e72fa9d733f52ba6adacf1dd862c41bc726019bee83434d9f484fb41`.
+Source attestation digests are ACDC
+`f226d5d54454f1e4db0e0b0431b52579b896c244be78e79c94936ace0ad067ca` and
+NNsight
+`1906a2580d4a0475719643c7cf9df6d43547f3ab4fe37218567db24e6e7eb687`.
+The integrated preflight still reports the family-wise planning outcome as
 `NoCandidate`/`unvalidated` until the reviewed cohort redesign is adopted.
 
-The circuit-tracer replacement-model import also passes the exact 130-file
-manifest for submodule commit
-`6018ed8d35e40f2c50062822e8dde422b8e52e2d`. The NNsight 0.6.1 source manifest
-is complete at 170 files, but importing that immutable checkout requires its
-native `nnsight._c.py_mount` extension to be built; the current checkout does
-not contain that build artifact. The installed NNsight wheel is not accepted
-as a substitute for the pinned source checkout, so NNsight local-byte
-qualification remains open.
-
-Before qualification: finish integration through one mandatory launch path;
-freeze checkout and installed runtime bytes; bind model, asset, tokenizer and
-fresh family roster; fix independent unit, contrasts, effect assumptions and
-numeric resource caps; run `ahcl.runtime_attestation` in each selected pinned
-lane, including the resolved interpreter, distribution, and imported module
-bytes; obtain
-externally provisioned reviewer trust and signed acceptance. Only
-then execute offline parity/repeat/no-op/reach and reconstruction
+Before qualification: freeze the checkout and installed runtime bytes; bind
+model, asset, tokenizer and the fresh family roster; keep the fixed power
+numbers; derive the immutable launch packet from readiness; and obtain
+externally provisioned reviewer trust plus signed acceptance over that launch
+packet. Only then execute offline parity/repeat/no-op/reach and reconstruction
 qualification. A failure closes that qualification without threshold or asset
 shopping. Fit/tune/assessment remain downstream.
 

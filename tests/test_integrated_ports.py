@@ -47,6 +47,7 @@ from ahcl.continual import StreamBatch
 from ahcl.lifecycle import LifecycleError, LockedTrial, TrialRow
 from ahcl.monitor import RidgeMonitor, metrics, shuffled_metrics
 from ahcl.preflight import (
+    build_launch_packet,
     build_review_packet,
     validate_corpus_custody,
     validate_corpus_manifest,
@@ -55,14 +56,8 @@ from ahcl.preflight import (
     validate_review_packet,
 )
 from ahcl.qualification import QualificationThresholds, qualify_path
-from ahcl.review import (
-    Ed25519Verifier,
-    ReviewError,
-    ReviewReceipt,
-    canonical_review_message,
-    packet_digest,
-    require_independent_accept,
-)
+from ahcl.review import packet_digest
+from ahcl.verified_review import TrustedReviewer, signed_message, verify_launch_receipt
 from ahcl.stats import (
     StatisticalPlan,
     achieved_power,
@@ -449,8 +444,12 @@ class IntegratedPortTests(unittest.TestCase):
             )
 
     def test_review_packet_digest_is_bound(self):
+        config = {
+            "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+            "execution": {"enabled": False},
+        }
         packet = build_review_packet(
-            config={"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"},
+            config=config,
             upstream_lock={"commit": "source"},
             dependency_lanes={"lane": "modern"},
             corpus_manifest={"manifest_digest": "0" * 64},
@@ -462,13 +461,35 @@ class IntegratedPortTests(unittest.TestCase):
             validate_review_packet(packet)
 
         incomplete = build_review_packet(
-            config={"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"},
+            config=config,
             upstream_lock={"commit": "source"},
             corpus_manifest={"manifest_digest": "0" * 64},
             source_digest="0" * 64,
         )
         with self.assertRaises(ValueError):
             validate_review_packet(incomplete)
+
+    def test_launch_packet_is_immutable_enabled_derivative(self):
+        readiness = build_review_packet(
+            config={
+                "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+                "execution": {"enabled": False},
+            },
+            upstream_lock={"commit": "source"},
+            dependency_lanes={"lane": "modern"},
+            corpus_manifest={"manifest_digest": "0" * 64},
+            source_digest="0" * 64,
+        )
+        launch = build_launch_packet(readiness)
+        self.assertFalse(readiness["config"]["execution"]["enabled"])
+        self.assertEqual(readiness["packet_role"], "readiness")
+        self.assertTrue(launch["config"]["execution"]["enabled"])
+        self.assertEqual(launch["packet_role"], "launch")
+        self.assertNotEqual(readiness["packet_digest"], launch["packet_digest"])
+        validate_review_packet(readiness, expected_role="readiness")
+        validate_review_packet(launch, expected_role="launch")
+        with self.assertRaises(ValueError):
+            build_launch_packet(launch)
 
     def test_numerical_checks_enforce_noop_and_reach(self):
         self.assertEqual(assert_noop_identity((1.0, 2.0), (1.0, 2.0)), 0.0)
@@ -670,58 +691,137 @@ class IntegratedPortTests(unittest.TestCase):
         with self.assertRaises(LifecycleError):
             trial.assess(rows("assessment", 0), lambda _predictor, _rows: {"score": 2.0})
 
-    def test_operator_cannot_self_accept(self):
-        packet = {"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"}
-        receipt = ReviewReceipt(packet_digest(packet), "operator", "ACCEPT", "signed")
-        with self.assertRaises(ReviewError):
-            require_independent_accept(receipt, expected_packet_digest=packet_digest(packet), operator_id="operator")
-
-    def test_review_requires_independent_signature_verifier(self):
-        packet = {"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"}
-        receipt = ReviewReceipt(packet_digest(packet), "reviewer", "ACCEPT", "signed", public_key_id="key-1")
-        with self.assertRaises(ReviewError):
-            require_independent_accept(receipt, expected_packet_digest=packet_digest(packet), operator_id="operator")
-
-        with self.assertRaises(ReviewError):
-            require_independent_accept(
+    def test_canonical_receipt_rejects_self_review(self):
+        packet = self._launch_packet()
+        receipt = {
+            "packet_digest": packet["packet_digest"],
+            "reviewer_id": "operator",
+            "public_key_id": "reviewer-key-1",
+            "decision": "ACCEPT",
+            "purpose": "qualification",
+            "signature": "00" * 64,
+        }
+        registry = {"reviewer-key-1": TrustedReviewer("operator", b"key")}
+        with self.assertRaisesRegex(ValueError, "independently trusted"):
+            verify_launch_receipt(
+                packet,
+                packet["config"],
                 receipt,
-                expected_packet_digest=packet_digest(packet),
+                registry,
                 operator_id="operator",
-                verify_signature=lambda _receipt, _message: True,
-                trusted_public_key_ids=frozenset({"other-key"}),
+                purpose="qualification",
             )
 
-        self.assertEqual(canonical_review_message("0" * 64), "ahcl.review.packet.v1:" + "0" * 64)
-
-    def test_ed25519_receipt_verifies_canonical_packet_message(self):
+    def test_ed25519_receipt_verifies_canonical_json_message(self):
         try:
             from cryptography.hazmat.primitives import serialization
             from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
         except ImportError:
             self.skipTest("cryptography is not installed in the test environment")
-        packet = {"state_slice": "aligned-holistic-continual-learning-integrated-stack-v2"}
-        locked_digest = packet_digest(packet)
+        packet = self._launch_packet()
         private_key = Ed25519PrivateKey.generate()
         public_key = private_key.public_key().public_bytes(
             serialization.Encoding.Raw,
             serialization.PublicFormat.Raw,
         )
-        signature = private_key.sign(canonical_review_message(locked_digest).encode("ascii"))
-        receipt = ReviewReceipt(
-            locked_digest,
-            "independent-reviewer",
-            "ACCEPT",
-            signature.hex(),
-            public_key_id="reviewer-key-1",
+        signature = private_key.sign(
+            signed_message(packet["packet_digest"], "independent-reviewer", "reviewer-key-1", "qualification")
         )
-        verifier = Ed25519Verifier({"reviewer-key-1": public_key})
-        require_independent_accept(
-            receipt,
-            expected_packet_digest=locked_digest,
-            operator_id="operator",
-            verify_signature=verifier,
-            trusted_public_key_ids=verifier.trusted_key_ids,
+        receipt = {
+            "packet_digest": packet["packet_digest"],
+            "reviewer_id": "independent-reviewer",
+            "public_key_id": "reviewer-key-1",
+            "decision": "ACCEPT",
+            "purpose": "qualification",
+            "signature": signature.hex(),
+        }
+        registry = {"reviewer-key-1": TrustedReviewer("independent-reviewer", public_key)}
+        self.assertEqual(
+            len(verify_launch_receipt(
+                packet,
+                packet["config"],
+                receipt,
+                registry,
+                operator_id="operator",
+                purpose="qualification",
+            )),
+            64,
         )
+
+    def test_execution_uses_registry_bound_canonical_receipt(self):
+        try:
+            from cryptography.hazmat.primitives import serialization
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        except ImportError:
+            self.skipTest("cryptography is not installed in the test environment")
+        config = {
+            "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+            "execution": {"enabled": True},
+            "runtime": {"python": "3.11.11"},
+        }
+        packet = self._launch_packet()
+        packet["config"] = config
+        packet["packet_digest"] = packet_digest({key: value for key, value in packet.items() if key != "packet_digest"})
+        private_key = Ed25519PrivateKey.generate()
+        public_key = private_key.public_key().public_bytes(
+            serialization.Encoding.Raw,
+            serialization.PublicFormat.Raw,
+        )
+        reviewer_id = "independent-reviewer"
+        key_id = "reviewer-key-1"
+        receipt = {
+            "packet_digest": packet["packet_digest"],
+            "reviewer_id": reviewer_id,
+            "public_key_id": key_id,
+            "decision": "ACCEPT",
+            "purpose": "qualification",
+            "signature": private_key.sign(
+                signed_message(packet["packet_digest"], reviewer_id, key_id, "qualification")
+            ).hex(),
+        }
+        registry = {key_id: TrustedReviewer(reviewer_id, public_key)}
+        with patch("ahcl.execution.validate_runtime_attestation"):
+            require_execution_open(
+                config,
+                receipt,
+                packet_digest=packet["packet_digest"],
+                reviewed_packet=packet,
+                operator_id="operator",
+                registry=registry,
+            )
+
+        legacy = dict(receipt)
+        legacy["signature"] = private_key.sign(
+            ("ahcl.review.packet.v1:" + packet["packet_digest"]).encode("ascii")
+        ).hex()
+        with patch("ahcl.execution.validate_runtime_attestation"):
+            with self.assertRaisesRegex(ExecutionClosed, "canonical verification"):
+                require_execution_open(
+                    config,
+                    legacy,
+                    packet_digest=packet["packet_digest"],
+                    reviewed_packet=packet,
+                    operator_id="operator",
+                    registry=registry,
+                )
+
+    def _launch_packet(self):
+        config = {
+            "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+            "execution": {"enabled": True},
+        }
+        packet = {
+            "schema": "ahcl.review.packet.v1",
+            "packet_role": "launch",
+            "state_slice": config["state_slice"],
+            "config": config,
+            "upstream_lock_digest": "a" * 64,
+            "dependency_lanes_digest": "b" * 64,
+            "corpus_manifest_digest": "c" * 64,
+            "source_digest": "d" * 64,
+        }
+        packet["packet_digest"] = packet_digest(packet)
+        return packet
 
     def test_execution_stays_closed_without_review(self):
         config = {"execution": {"enabled": False}}
@@ -734,13 +834,22 @@ class IntegratedPortTests(unittest.TestCase):
             "execution": {"enabled": True},
             "runtime": {"python": "3.11.11"},
         }
-        packet = {"config": config}
-        receipt = ReviewReceipt(packet_digest(packet), "reviewer", "ACCEPT", "signature", public_key_id="key")
+        packet = self._launch_packet()
+        packet["config"] = config
+        packet["packet_digest"] = packet_digest({key: value for key, value in packet.items() if key != "packet_digest"})
+        receipt = {
+            "packet_digest": packet["packet_digest"],
+            "reviewer_id": "reviewer",
+            "public_key_id": "key",
+            "decision": "ACCEPT",
+            "purpose": "qualification",
+            "signature": "00" * 64,
+        }
         with self.assertRaisesRegex(ExecutionClosed, "runtime distribution attestation"):
             require_execution_open(
                 config,
                 receipt,
-                packet_digest=packet_digest(packet),
+                packet_digest=packet["packet_digest"],
                 reviewed_packet=packet,
                 operator_id="operator",
             )
@@ -751,8 +860,17 @@ class IntegratedPortTests(unittest.TestCase):
             "execution": {"enabled": True},
             "runtime": {"python": "3.11.11"},
         }
-        packet = {"config": config}
-        receipt = ReviewReceipt(packet_digest(packet), "reviewer", "REJECT", "signature", public_key_id="key")
+        packet = self._launch_packet()
+        packet["config"] = config
+        packet["packet_digest"] = packet_digest({key: value for key, value in packet.items() if key != "packet_digest"})
+        receipt = {
+            "packet_digest": packet["packet_digest"],
+            "reviewer_id": "reviewer",
+            "public_key_id": "key",
+            "decision": "REJECT",
+            "purpose": "qualification",
+            "signature": "00" * 64,
+        }
         runtime = RuntimeAttestation.from_payload({
             "schema": "ahcl.runtime.attestation.v1",
             "state_slice": config["state_slice"],
@@ -779,11 +897,11 @@ class IntegratedPortTests(unittest.TestCase):
         with patch("ahcl.execution.validate_runtime_lane_attestation") as validate_lane, patch(
             "ahcl.execution.validate_runtime_attestation"
         ):
-            with self.assertRaisesRegex(ReviewError, "not ACCEPT"):
+            with self.assertRaisesRegex(ExecutionClosed, "canonical verification"):
                 require_execution_open(
                     config,
                     receipt,
-                    packet_digest=packet_digest(packet),
+                    packet_digest=packet["packet_digest"],
                     reviewed_packet=packet,
                     operator_id="operator",
                     runtime_attestation=lane,

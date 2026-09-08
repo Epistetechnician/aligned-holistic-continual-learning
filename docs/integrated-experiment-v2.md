@@ -165,7 +165,11 @@ The review packet binds the upstream lock, model revision, asset revision and
 hashes, corpus manifest, runtime lock, source digest, module registry,
 estimands, controls, thresholds, retention policy, and validator digest. An
 independent reviewer must return a packet-bound signed `ACCEPT`; the operator
-cannot provide that receipt. Only then may the execution flag be enabled.
+cannot provide that receipt. The tracked readiness packet keeps
+`execution.enabled: false`. After the readiness inputs are frozen, derive a
+separate launch packet with `build_launch_packet`; that immutable artifact
+sets `execution.enabled: true`, receives a new digest, and is the only packet
+that may be signed and used at launch. Never mutate a signed packet.
 
 The execution order is protocol review, custody verification, qualification,
 fit, tune lock, independent lock review, assessment, independent aggregate

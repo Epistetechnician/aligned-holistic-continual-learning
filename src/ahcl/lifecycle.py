@@ -16,9 +16,9 @@ from typing import Any, Callable, Iterable, Mapping
 from .canonical import digest
 from .assessment_custody import claim_assessment_attempt
 from .execution import require_execution_open
-from .review import Ed25519Verifier, ReviewReceipt
 from .runtime_attestation import RuntimeAttestation, RuntimeLaneAttestation
 from .stats import StatisticalPlan, validate_locked_study
+from .verified_review import TrustedReviewer
 
 
 class LifecycleError(ValueError):
@@ -201,7 +201,7 @@ class LockedTrial:
 
 def open_model_trial(
     config: Mapping[str, Any],
-    receipt: ReviewReceipt | None,
+    receipt: Mapping[str, Any] | None,
     *,
     packet_digest: str,
     reviewed_packet: Mapping[str, Any] | None = None,
@@ -209,8 +209,8 @@ def open_model_trial(
     assessment_custody_root: Path | None = None,
     runtime_attestation: RuntimeAttestation | RuntimeLaneAttestation | None = None,
     runtime_lane: str | None = None,
-    verify_signature: Ed25519Verifier | None = None,
-    trusted_public_key_ids: frozenset[str] | None = None,
+    registry: Mapping[str, TrustedReviewer] | None = None,
+    review_purpose: str = "qualification",
 ) -> LockedTrial:
     """Open a model-bearing lifecycle only after independent review."""
 
@@ -223,8 +223,8 @@ def open_model_trial(
         operator_id=operator_id,
         runtime_attestation=runtime_attestation,
         runtime_lane=runtime_lane,
-        verify_signature=verify_signature,
-        trusted_public_key_ids=trusted_public_key_ids,
+        registry=registry,
+        review_purpose=review_purpose,
     )
     if assessment_custody_root is None:
         raise ExecutionClosed("external assessment custody root is required at launch")
