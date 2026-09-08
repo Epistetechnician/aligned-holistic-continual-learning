@@ -4,3 +4,6 @@ version = "0.1.0"
 description = "Clean-room synthetic causal-monitor experiment for continual learning"
 requires-python = ">=3.11"
 dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -49,19 +49,19 @@ See `power-design.md`. No current six-document assessment is declared powered.
 
 Status: **not qualified; no independent execution ACCEPT**.
 
-The shared checkout is still being modified by another process. This pass
-preserves those files and does not regenerate a purported final packet while
-source/config bytes are moving. Its additions can be committed independently.
-The known external custody path must be checked explicitly, not inferred absent
-from an unset environment variable. The active interpreter and installed model
-packages do not match the configured runtime lane.
+The exact packet has now been regenerated after the source and configuration
+bytes settled. Read-only preflight passes with status
+`READY_FOR_INDEPENDENT_REVIEW`; model execution remains disabled. The known
+external custody path is validated explicitly rather than inferred from an
+unset environment variable. The active interpreter and installed model
+packages still do not match the configured runtime lane.
 
 Before qualification: finish integration through one mandatory launch path;
 freeze checkout and installed runtime bytes; bind model, asset, tokenizer and
 fresh family roster; fix independent unit, contrasts, effect assumptions and
-numeric resource caps; regenerate packet; obtain externally provisioned reviewer
-trust and signed acceptance. Only then execute offline parity/repeat/no-op/reach
-and reconstruction qualification. A failure closes that qualification without
+numeric resource caps; obtain externally provisioned reviewer trust and signed
+acceptance. Only then execute offline parity/repeat/no-op/reach and
+reconstruction qualification. A failure closes that qualification without
 threshold or asset shopping. Fit/tune/assessment remain downstream.
 
 An independent Luna agent produced `review/luna-readiness-audit.md`; that is a
