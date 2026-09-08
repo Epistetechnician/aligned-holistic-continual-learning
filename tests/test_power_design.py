@@ -7,6 +7,7 @@ import math
 import unittest
 
 from ahcl.power_design import PowerDesign, two_sided_power
+from ahcl.stats import StatisticalPlan, familywise_primary_claim
 
 
 class PowerDesignTests(unittest.TestCase):
@@ -49,10 +50,71 @@ class PowerDesignTests(unittest.TestCase):
             max(0.0, 1 - 2 * (1 - plan.marginal_power(clusters))),
         )
 
+    def test_familywise_requirement_expands_to_families_per_cohort(self):
+        plan = PowerDesign(effect_size=0.5, endpoints=4, joint_target=0.80, max_clusters=1_000)
+        self.assertEqual(plan.joint_required_clusters, 69)
+        self.assertEqual(plan.required_families_per_cohort(families_per_document=8), 552)
+
     def test_current_six_document_panel_is_not_declared_powered(self):
         plan = PowerDesign(effect_size=0.5, endpoints=4, repeats=3, joint_target=0.80)
         self.assertGreater(plan.joint_required_clusters, 6)
         self.assertLess(plan.joint_lower_bound(6), 0.80)
+
+    def test_current_panel_returns_no_candidate_and_unvalidated(self):
+        outcome = familywise_primary_claim(StatisticalPlan())
+        self.assertEqual(outcome.status, "NoCandidate")
+        self.assertEqual(outcome.validation, "unvalidated")
+        self.assertEqual(outcome.available_documents, 6)
+        self.assertEqual(outcome.required_documents, 69)
+        self.assertEqual(outcome.required_families_per_cohort, 552)
+        self.assertLess(outcome.power_lower_bound, outcome.target_power)
+
+    def test_familywise_cohort_size_is_monotone_and_repeats_invariant(self):
+        smaller = StatisticalPlan(
+            fit_families=551, tune_families=551, assessment_families=551
+        )
+        required = StatisticalPlan(
+            fit_families=552, tune_families=552, assessment_families=552
+        )
+        repeated = StatisticalPlan(
+            fit_families=552,
+            tune_families=552,
+            assessment_families=552,
+            repeats=7,
+        )
+        smaller_outcome = familywise_primary_claim(smaller)
+        required_outcome = familywise_primary_claim(required)
+        repeated_outcome = familywise_primary_claim(repeated)
+        self.assertEqual(smaller_outcome.status, "NoCandidate")
+        self.assertEqual(required_outcome.status, "Candidate")
+        self.assertEqual(required_outcome.power_lower_bound, repeated_outcome.power_lower_bound)
+        self.assertEqual(required_outcome.required_documents, repeated_outcome.required_documents)
+
+    def test_bonferroni_is_safe_for_the_same_familywise_calculation(self):
+        outcome = familywise_primary_claim(
+            StatisticalPlan(
+                fit_families=552,
+                tune_families=552,
+                assessment_families=552,
+                multiplicity="Bonferroni",
+            )
+        )
+        self.assertEqual(outcome.status, "Candidate")
+        self.assertAlmostEqual(outcome.per_contrast_alpha, 0.0125)
+
+    def test_unmet_document_assumption_is_no_candidate(self):
+        outcome = familywise_primary_claim(StatisticalPlan(independent_unit="family"))
+        self.assertEqual(outcome.status, "NoCandidate")
+        self.assertEqual(outcome.validation, "unvalidated")
+        self.assertIn("independent_unit", outcome.reason)
+
+    def test_no_complete_document_is_no_candidate(self):
+        outcome = familywise_primary_claim(
+            StatisticalPlan(fit_families=7, tune_families=7, assessment_families=7)
+        )
+        self.assertEqual(outcome.status, "NoCandidate")
+        self.assertEqual(outcome.available_documents, 0)
+        self.assertEqual(outcome.power_lower_bound, 0.0)
 
     def test_nonfinite_inputs_are_rejected(self):
         for field in ("effect_size", "alpha", "target_power"):
@@ -60,11 +122,18 @@ class PowerDesignTests(unittest.TestCase):
             values[field] = math.nan
             with self.subTest(field=field), self.assertRaises(ValueError):
                 PowerDesign(**values)
+        with self.assertRaises(ValueError):
+            familywise_primary_claim(StatisticalPlan(alpha=math.nan))
 
     def test_counts_must_be_positive_integers(self):
         for field in ("endpoints", "repeats", "max_clusters"):
             with self.subTest(field=field), self.assertRaises(ValueError):
                 PowerDesign(effect_size=0.5, **{field: 0})
+
+    def test_familywise_conversion_rejects_malformed_family_count(self):
+        plan = PowerDesign(effect_size=0.5, endpoints=4, joint_target=0.80)
+        with self.assertRaises(ValueError):
+            plan.required_families_per_cohort(families_per_document=0)
 
 
 if __name__ == "__main__":

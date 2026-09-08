@@ -118,6 +118,8 @@ def source_tree_digest(root: Path) -> str:
     authored = []
     for directory in ("src", "tests", "configs", "docs", "crates"):
         for path in sorted((root / directory).rglob("*")):
+            if path.is_symlink():
+                raise PreflightError(f"source tree contains symlink: {path.relative_to(root)}")
             if path.is_file():
                 # The packet records this digest, so including the packet would
                 # create a circular identity. Review records carry the packet
@@ -131,7 +133,14 @@ def source_tree_digest(root: Path) -> str:
                 ):
                     continue
                 authored.append({"path": str(relative), "sha256": file_digest(path)})
-    for name in ("AGENTS.md", "pyproject.toml", "Cargo.toml", "Cargo.lock"):
+    for name in (
+        "AGENTS.md",
+        "pyproject.toml",
+        "Cargo.toml",
+        "Cargo.lock",
+        "package.json",
+        "pnpm-workspace.yaml",
+    ):
         path = root / name
         if path.is_file():
             authored.append({"path": name, "sha256": file_digest(path)})

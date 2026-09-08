@@ -56,6 +56,37 @@ external custody path is validated explicitly rather than inferred from an
 unset environment variable. The active interpreter and installed model
 packages still do not match the configured runtime lane.
 
+After any authorized source, configuration, lane, or protocol edit, rebuild
+the tracked packet only after the checkout is stable:
+
+```sh
+PYTHONPATH=src python3 -m ahcl.refresh_packet
+AHCL_CUSTODY_ROOT=/owner-only/path pnpm run lint
+```
+
+The refresh command validates the public manifests and source identity before
+writing `configs/review-packet.v2.json`. It does not inspect model bytes, sign
+review receipts, install dependencies, or open execution.
+
+When an operator has created a pinned environment, produce one lane document
+per declared execution lane without loading a model:
+
+```sh
+PYTHONPATH=src python3 -m ahcl.runtime_attestation \
+  --lane modern --environment /owner-only/runtime/modern
+PYTHONPATH=src python3 -m ahcl.runtime_attestation \
+  --lane circuit_tracer --environment /owner-only/runtime/circuit-tracer
+PYTHONPATH=src python3 -m ahcl.runtime_attestation \
+  --lane acdc --environment /owner-only/runtime/acdc
+```
+
+The command runs the attestation inside the selected interpreter, hashes its
+installed distribution files and imported module bytes, and emits canonical
+JSON to stdout. Retain those documents in the external review/custody system;
+do not commit them. The integrated preflight also reports the current
+family-wise planning outcome as `NoCandidate`/`unvalidated` until the reviewed
+cohort redesign is adopted.
+
 Before qualification: finish integration through one mandatory launch path;
 freeze checkout and installed runtime bytes; bind model, asset, tokenizer and
 fresh family roster; fix independent unit, contrasts, effect assumptions and

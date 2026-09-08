@@ -66,7 +66,10 @@ shared aggregate schema:
 The adapters in `src/ahcl/adapters/` prevent these lanes from sharing Python
 module state. Model and SAE loading requires an exact revision, a caller-owned
 local custody root, a matching weight digest, and an imported module location
-inside the pinned checkout. `ahcl.runtime_attestation` hashes the resolved
+inside the pinned checkout. NNsight and circuit-tracer additionally require a
+caller-supplied exact source-file roster with SHA-256 digests; the loader
+rejects symlinks, roster drift, path escapes, and unlisted module bytes before
+constructing a tokenizer or model. `ahcl.runtime_attestation` hashes the resolved
 Python interpreter, every installed distribution file, and each imported
 module's bytes, and binds imported module locations to the selected lane; the
 execution gate rejects an enabled packet without that attestation. Trial

@@ -42,6 +42,12 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 cargo test --workspace
 ```
 
+Run the full repository gate with an explicitly bound owner-only custody root:
+
+```sh
+AHCL_CUSTODY_ROOT=/owner-only/path pnpm run lint
+```
+
 Run the read-only integrated preflight against the external custody root:
 
 ```sh
@@ -58,8 +64,9 @@ generalization to a real model.
 
 The integrated packet is currently `READY_FOR_INDEPENDENT_REVIEW`, with
 execution disabled. Its declared power is a single-comparison approximation;
-Holm joint power and local-byte custody for the remaining NNsight and
-circuit-tracer paths are unresolved review items. A launch-time runtime
+Holm joint power remains an unresolved review item. NNsight and circuit-tracer
+loaders now require exact caller-supplied local source manifests in addition
+to their existing local model and transcoder custody checks. A launch-time runtime
 attestation implementation covers the pinned interpreter, distribution, and
 imported module bytes, but this host has not produced one for the
 pinned Python 3.11.11 lanes. No model-backed result is reported.

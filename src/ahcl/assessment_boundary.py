@@ -6,11 +6,19 @@ This narrow model-free boundary is not yet the model loader entrypoint.
 from .assessment_custody import claim_assessment_attempt
 from .sealed_predictor import SealedLinearPredictor
 from .verified_review import verify_launch_receipt
-from .runtime_attestation import RuntimeAttestation, RuntimeAttestationError, validate_runtime_attestation
+from .runtime_attestation import (
+    RuntimeAttestation,
+    RuntimeAttestationError,
+    RuntimeLaneAttestation,
+    validate_runtime_attestation,
+    validate_runtime_lane_attestation,
+)
 
 
 def assess_once(*, packet, config, receipt, registry, operator_id, custody_root,
-                predictor, evaluate, runtime_attestation: RuntimeAttestation | None = None):
+                predictor, evaluate,
+                runtime_attestation: RuntimeAttestation | RuntimeLaneAttestation | None = None,
+                runtime_lane: str | None = None):
     """Consume the exact reviewed assessment allocation before its callback.
 
     The host owns evaluate and registry; neither may come from model output.
@@ -22,6 +30,18 @@ def assess_once(*, packet, config, receipt, registry, operator_id, custody_root,
     if config.get('execution', {}).get('enabled') is not True:
         raise ValueError('execution is disabled')
     try:
+        if isinstance(runtime_attestation, RuntimeLaneAttestation):
+            if not isinstance(runtime_lane, str) or not runtime_lane.strip():
+                raise RuntimeAttestationError('the selected runtime lane is required at assessment')
+            validate_runtime_lane_attestation(
+                runtime_attestation,
+                state_slice=config.get('state_slice', ''),
+                lane=runtime_lane,
+                expected_python=config.get('runtime', {}).get('python', ''),
+            )
+            runtime_attestation = runtime_attestation.runtime_attestation
+        elif runtime_lane is not None:
+            raise RuntimeAttestationError('a runtime lane attestation is required for the selected lane')
         validate_runtime_attestation(
             runtime_attestation,
             state_slice=config.get('state_slice', ''),

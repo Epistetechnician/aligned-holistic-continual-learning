@@ -6,7 +6,7 @@ State slice: aligned-holistic-continual-learning-integrated-stack-v2.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from ..interfaces import ActivationBackend, ActivationRecord
 from .common import (
@@ -44,13 +44,22 @@ class NNsightActivationAdapter(ActivationBackend):
         model_root: str | Path | None = None,
         model_weights_sha256: str | None = None,
         source_root: str | Path | None = None,
+        source_files: Mapping[str, str] | None = None,
         enabled: bool = False,
     ) -> "NNsightActivationAdapter":
         require_enabled(enabled, "NNsight model execution")
-        if not revision or model_root is None or not model_weights_sha256 or source_root is None:
-            raise RuntimeError("exact model revision, local custody root, weight digest, and source root are required")
+        if (
+            not revision
+            or model_root is None
+            or not model_weights_sha256
+            or source_root is None
+            or source_files is None
+        ):
+            raise RuntimeError(
+                "exact model revision, local custody root, weight digest, source root, and source manifest are required"
+            )
         module = optional_import("nnsight", "NNsight")
-        validate_imported_module(module, source_root, "NNsight")
+        validate_imported_module(module, source_root, "NNsight", expected_files=source_files)
         transformers = optional_import("transformers", "Transformers")
         torch = optional_import("torch", "PyTorch")
         root = Path(model_root).expanduser().resolve()

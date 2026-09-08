@@ -21,6 +21,24 @@ Bonferroni union-bound lower bound reaches that joint target. The bound is
 `max(0, 1 - K * (1 - marginal_power))` and makes no independence assumption
 among endpoints.
 
+For the family-wise primary cohort, `required_families_per_cohort` converts
+the required independent document count into the locked family roster. It
+requires a positive `families_per_document` value and returns
+`joint_required_clusters * families_per_document`; repeats are not part of
+this conversion. `ahcl.stats.familywise_primary_claim` applies the same
+calculation to the fit, tune, and assessment counts using the smallest number
+of complete documents. It reports the available documents, required documents,
+required families per cohort, per-contrast alpha, and the conservative lower
+bound as pure data.
+
+The result is `NoCandidate` with `unvalidated` validation whenever the
+independent-unit assumption is not `document`, no complete document exists,
+or the lower bound misses the target. A result with `Candidate` status is
+still `unvalidated`; it is a planning result and cannot self-authorize a
+study, model/provider execution, or scientific claim. Holm is the locked
+procedure, and Bonferroni alpha allocation is used as the safe planning
+calculation for either Holm or Bonferroni multiplicity.
+
 All inputs are finite; counts (`endpoints`, `repeats`, and the bounded search
 limit) are positive integers. The search fails closed when the requested count
 exceeds `max_clusters`.
@@ -34,8 +52,12 @@ The planner does not authorize model execution or scientific assessment.
 For an illustrative design with standardized document effect `0.5`, four
 endpoints, and three recorded repeats, the planner yields per-contrast
 `alpha = 0.0125`, 45 documents for 0.80 marginal power, and 69 documents for
-the 0.80 union-bound joint target. Six documents produce marginal power about
-`0.102` and a zero-clipped joint lower bound of `0`; these are planning values,
-not a scientific adequacy claim. `ahcl.stats.document_power_lower_bound`
-exposes this conservative bound for the locked study; marking the study
-`validated` fails closed unless the bound reaches the joint target.
+the 0.80 union-bound joint target. With eight families per document, that is
+552 families in each fit, tune, and assessment cohort. The current locked
+panel has 48 families per cohort, or six complete documents, and therefore
+returns `NoCandidate`/`unvalidated`; its lower bound is below the target.
+Six documents produce marginal power about `0.102` and a zero-clipped joint
+lower bound of `0`; these are planning values, not a scientific adequacy
+claim. `ahcl.stats.document_power_lower_bound` exposes the conservative bound
+for the locked study; marking the study `validated` fails closed unless the
+bound reaches the joint target.

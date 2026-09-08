@@ -1,0 +1,11 @@
+{
+  "name": "aligned-holistic-continual-learning",
+  "private": true,
+  "scripts": {
+    "lint": "pnpm run lint:fast && pnpm run test:focused && pnpm run verify:contracts && pnpm run verify:full",
+    "lint:fast": "PYTHONPATH=src python3 -c 'import ast, pathlib; [ast.parse(path.read_text(encoding=\"utf-8\"), filename=str(path)) for root in (pathlib.Path(\"src\"), pathlib.Path(\"tests\")) for path in root.rglob(\"*.py\")]' && cargo fmt --all -- --check",
+    "test:focused": "PYTHONPATH=src python3 -m unittest discover -s tests",
+    "verify:contracts": "cargo test --workspace",
+    "verify:full": "test -n \"$AHCL_CUSTODY_ROOT\" && PYTHONPATH=src python3 -m ahcl.integrated_preflight --custody-root \"$AHCL_CUSTODY_ROOT\""
+  }
+}

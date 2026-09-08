@@ -60,6 +60,45 @@ class StatisticalPlan:
         power_check(self)
 
 
+@dataclass(frozen=True)
+class FamilywisePrimaryClaim:
+    """Pure-data result for the conservative family-wise primary design.
+
+    ``status`` describes only the frozen planning calculation. ``validation``
+    remains ``unvalidated`` until an independent statistical review accepts
+    the assumptions and exact analysis protocol.
+    """
+
+    status: str
+    validation: str
+    reason: str
+    available_documents: int
+    required_documents: int
+    required_families_per_cohort: int
+    power_lower_bound: float
+    target_power: float
+    per_contrast_alpha: float
+
+    @property
+    def lower_bound(self) -> float:
+        """Compatibility name for the conservative family-wise lower bound."""
+
+        return self.power_lower_bound
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "status": self.status,
+            "validation": self.validation,
+            "reason": self.reason,
+            "available_documents": self.available_documents,
+            "required_documents": self.required_documents,
+            "required_families_per_cohort": self.required_families_per_cohort,
+            "power_lower_bound": self.power_lower_bound,
+            "target_power": self.target_power,
+            "per_contrast_alpha": self.per_contrast_alpha,
+        }
+
+
 FROZEN_CONTROLS = (
     "activation_only",
     "text_only",
@@ -144,7 +183,9 @@ def achieved_power(plan: StatisticalPlan) -> float:
     return (1.0 - cdf(critical - noncentrality)) + cdf(-critical - noncentrality)
 
 
-def power_check(plan: StatisticalPlan) -> None:
+def _validate_power_inputs(plan: StatisticalPlan) -> None:
+    """Validate power-plan fields without evaluating any adequacy claim."""
+
     if (
         not isinstance(plan.alpha, (int, float))
         or isinstance(plan.alpha, bool)
@@ -160,8 +201,8 @@ def power_check(plan: StatisticalPlan) -> None:
         or not 0.0 <= plan.icc < 1.0
     ):
         raise ValueError("invalid alpha, power, or ICC")
-    if plan.multiplicity != "Holm":
-        raise ValueError("only the frozen Holm correction is permitted")
+    if plan.multiplicity not in {"Holm", "Bonferroni"}:
+        raise ValueError("only Holm or Bonferroni multiplicity is permitted")
     if (
         not isinstance(plan.minimum_effect_size, (int, float))
         or isinstance(plan.minimum_effect_size, bool)
@@ -171,7 +212,6 @@ def power_check(plan: StatisticalPlan) -> None:
         or plan.power_scope != "single_comparison_approximation"
         or plan.power_validation != "familywise_holm_power_unvalidated"
         or not isinstance(plan.independent_unit, str)
-        or plan.independent_unit != "document"
         or isinstance(plan.families_per_document, bool)
         or not isinstance(plan.families_per_document, int)
         or plan.families_per_document < 1
@@ -189,24 +229,10 @@ def power_check(plan: StatisticalPlan) -> None:
     counts = (plan.fit_families, plan.tune_families, plan.assessment_families, plan.repeats)
     if any(isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in counts):
         raise ValueError("all cohort counts must be positive")
-    if achieved_power(plan) < plan.power:
-        raise ValueError("locked cohort does not meet the declared power target")
-    if plan.power_design_status == "validated" and document_power_lower_bound(plan) < plan.joint_power_target:
-        raise ValueError("validated family-wise power claim exceeds the document-level design")
 
 
-def document_power_lower_bound(plan: StatisticalPlan) -> float:
-    """Return the conservative document-level Holm-family power lower bound."""
-
-    counts = (plan.fit_families, plan.tune_families, plan.assessment_families)
-    if any(isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in counts):
-        raise ValueError("all cohort counts must be positive")
-    if isinstance(plan.families_per_document, bool) or not isinstance(plan.families_per_document, int) or plan.families_per_document < 1:
-        raise ValueError("families_per_document must be a positive integer")
-    documents = min(plan.fit_families, plan.tune_families, plan.assessment_families) // plan.families_per_document
-    if documents < 1:
-        raise ValueError("cohorts contain no complete independent document")
-    design = PowerDesign(
+def _familywise_design(plan: StatisticalPlan) -> PowerDesign:
+    return PowerDesign(
         effect_size=plan.minimum_effect_size,
         alpha=plan.alpha,
         target_power=plan.power,
@@ -214,4 +240,80 @@ def document_power_lower_bound(plan: StatisticalPlan) -> float:
         repeats=plan.repeats,
         joint_target=plan.joint_power_target,
     )
+
+
+def familywise_primary_claim(plan: StatisticalPlan) -> FamilywisePrimaryClaim:
+    """Calculate the reviewed-ready family-wise primary planning outcome.
+
+    The calculation treats a complete document as one independent unit,
+    divides alpha across endpoints before a Holm procedure, and ignores
+    repeats when determining independent document count. It is deliberately
+    not a validation or execution authorization.
+    """
+
+    _validate_power_inputs(plan)
+    design = _familywise_design(plan)
+    available_documents = min(
+        plan.fit_families, plan.tune_families, plan.assessment_families
+    ) // plan.families_per_document
+    required_documents = design.joint_required_clusters
+    if required_documents is None:
+        raise ValueError("joint target is required for the family-wise primary claim")
+    required_families = design.required_families_per_cohort(
+        families_per_document=plan.families_per_document
+    )
+    power_lower_bound = (
+        design.joint_lower_bound(available_documents) if available_documents else 0.0
+    )
+    assumption_failures = []
+    if plan.independent_unit != "document":
+        assumption_failures.append("independent_unit must be document")
+    if assumption_failures:
+        reason = "assumptions unmet: " + "; ".join(assumption_failures)
+        status = "NoCandidate"
+    elif available_documents < 1:
+        reason = "no complete independent document is available"
+        status = "NoCandidate"
+    elif power_lower_bound < plan.joint_power_target:
+        reason = (
+            f"family-wise lower bound {power_lower_bound:.6f} is below target "
+            f"{plan.joint_power_target:.6f}"
+        )
+        status = "NoCandidate"
+    else:
+        reason = "family-wise planning target met; independent statistical review remains required"
+        status = "Candidate"
+    return FamilywisePrimaryClaim(
+        status=status,
+        validation="unvalidated",
+        reason=reason,
+        available_documents=available_documents,
+        required_documents=required_documents,
+        required_families_per_cohort=required_families,
+        power_lower_bound=power_lower_bound,
+        target_power=plan.joint_power_target,
+        per_contrast_alpha=design.per_contrast_alpha,
+    )
+
+
+def power_check(plan: StatisticalPlan) -> None:
+    _validate_power_inputs(plan)
+    if plan.independent_unit != "document":
+        raise ValueError("independent_unit must be document")
+    if achieved_power(plan) < plan.power:
+        raise ValueError("locked cohort does not meet the declared power target")
+    if plan.power_design_status == "validated" and familywise_primary_claim(plan).status != "Candidate":
+        raise ValueError("validated family-wise power claim exceeds the document-level design")
+
+
+def document_power_lower_bound(plan: StatisticalPlan) -> float:
+    """Return the conservative document-level Holm-family power lower bound."""
+
+    _validate_power_inputs(plan)
+    if plan.independent_unit != "document":
+        raise ValueError("independent_unit must be document")
+    documents = min(plan.fit_families, plan.tune_families, plan.assessment_families) // plan.families_per_document
+    if documents < 1:
+        raise ValueError("cohorts contain no complete independent document")
+    design = _familywise_design(plan)
     return design.joint_lower_bound(documents)

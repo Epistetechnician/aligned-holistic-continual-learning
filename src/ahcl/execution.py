@@ -9,7 +9,13 @@ from typing import Any, Mapping
 
 from .canonical import digest
 from .review import Ed25519Verifier, ReviewReceipt, require_independent_accept
-from .runtime_attestation import RuntimeAttestation, RuntimeAttestationError, validate_runtime_attestation
+from .runtime_attestation import (
+    RuntimeAttestation,
+    RuntimeAttestationError,
+    RuntimeLaneAttestation,
+    validate_runtime_attestation,
+    validate_runtime_lane_attestation,
+)
 
 
 class ExecutionClosed(RuntimeError):
@@ -23,7 +29,8 @@ def require_execution_open(
     packet_digest: str,
     reviewed_packet: Mapping[str, Any] | None = None,
     operator_id: str,
-    runtime_attestation: RuntimeAttestation | None = None,
+    runtime_attestation: RuntimeAttestation | RuntimeLaneAttestation | None = None,
+    runtime_lane: str | None = None,
     verify_signature: Ed25519Verifier | None = None,
     trusted_public_key_ids: frozenset[str] | None = None,
 ) -> None:
@@ -36,6 +43,18 @@ def require_execution_open(
     if reviewed_packet.get("config") != config:
         raise ExecutionClosed("launch config does not match the reviewed packet")
     try:
+        if isinstance(runtime_attestation, RuntimeLaneAttestation):
+            if not isinstance(runtime_lane, str) or not runtime_lane.strip():
+                raise RuntimeAttestationError("the selected runtime lane is required at launch")
+            validate_runtime_lane_attestation(
+                runtime_attestation,
+                state_slice=config.get("state_slice", ""),
+                lane=runtime_lane,
+                expected_python=config.get("runtime", {}).get("python", ""),
+            )
+            runtime_attestation = runtime_attestation.runtime_attestation
+        elif runtime_lane is not None:
+            raise RuntimeAttestationError("a runtime lane attestation is required for the selected lane")
         validate_runtime_attestation(
             runtime_attestation,
             state_slice=config.get("state_slice", ""),

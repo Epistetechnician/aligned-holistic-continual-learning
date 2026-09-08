@@ -17,7 +17,7 @@ from .canonical import digest
 from .assessment_custody import claim_assessment_attempt
 from .execution import require_execution_open
 from .review import Ed25519Verifier, ReviewReceipt
-from .runtime_attestation import RuntimeAttestation
+from .runtime_attestation import RuntimeAttestation, RuntimeLaneAttestation
 from .stats import StatisticalPlan, validate_locked_study
 
 
@@ -207,7 +207,8 @@ def open_model_trial(
     reviewed_packet: Mapping[str, Any] | None = None,
     operator_id: str,
     assessment_custody_root: Path | None = None,
-    runtime_attestation: RuntimeAttestation | None = None,
+    runtime_attestation: RuntimeAttestation | RuntimeLaneAttestation | None = None,
+    runtime_lane: str | None = None,
     verify_signature: Ed25519Verifier | None = None,
     trusted_public_key_ids: frozenset[str] | None = None,
 ) -> LockedTrial:
@@ -221,6 +222,7 @@ def open_model_trial(
         reviewed_packet=reviewed_packet,
         operator_id=operator_id,
         runtime_attestation=runtime_attestation,
+        runtime_lane=runtime_lane,
         verify_signature=verify_signature,
         trusted_public_key_ids=trusted_public_key_ids,
     )

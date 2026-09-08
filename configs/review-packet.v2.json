@@ -108,9 +108,9 @@
   },
   "corpus_manifest_digest": "049f6af155073b587fe6c31db342700be15000deccfbf61cbc9ff99d55c3992c",
   "dependency_lanes_digest": "e5dac1ec0fb40e835c4be5218dd845ce86420c01dce2f97b1cc328f98a8d71c6",
-  "packet_digest": "5afde28f87ad335e93c05343fcb0502f58250baba6c5a649a421918e83e40412",
+  "packet_digest": "cd3875c69ae61e2f5eb126d3154de5565eb27bfcabc675bd6fcfa8826092b1ef",
   "schema": "ahcl.review.packet.v1",
-  "source_digest": "6d887c276112a200c331a1aea7b5d128730afb46584cb5b5c29a1eb703bf386f",
+  "source_digest": "957dd37d67ed0ac20f142d5068d3bc7bdcefc374f2dbd3421162c5fdd10d56dc",
   "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
   "upstream_lock_digest": "c7545c15404b911ca50ae7f00e369bd82e0439ebac81e698dd0d2a75c5536816"
 }

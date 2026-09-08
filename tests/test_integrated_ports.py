@@ -8,8 +8,10 @@ import math
 import subprocess
 import sys
 import unittest
+from types import SimpleNamespace
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import Mock, patch
 
 from ahcl.adapters import (
     ACDCDiscoveryAdapter,
@@ -70,7 +72,12 @@ from ahcl.stats import (
     validate_locked_study,
 )
 from ahcl.synthetic import AXES, observations
-from ahcl.runtime_attestation import RuntimeAttestation, RuntimeAttestationError, validate_runtime_attestation
+from ahcl.runtime_attestation import (
+    RuntimeAttestation,
+    RuntimeAttestationError,
+    RuntimeLaneAttestation,
+    validate_runtime_attestation,
+)
 
 
 class IntegratedPortTests(unittest.TestCase):
@@ -180,6 +187,203 @@ class IntegratedPortTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 validate_imported_module(json, root, "test module")
 
+    def test_imported_module_requires_exact_source_manifest(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            module_file = root / "nnsight" / "__init__.py"
+            module_file.parent.mkdir()
+            module_file.write_bytes(b"pinned source")
+            expected = {
+                "nnsight/__init__.py": hashlib.sha256(module_file.read_bytes()).hexdigest(),
+            }
+            module = SimpleNamespace(__file__=str(module_file))
+            self.assertEqual(
+                validate_imported_module(module, root, "NNsight", expected_files=expected),
+                module_file.resolve(),
+            )
+            cache = root / "__pycache__"
+            cache.mkdir()
+            (cache / "__init__.cpython-314.pyc").write_bytes(b"transient bytecode")
+            self.assertEqual(
+                validate_imported_module(module, root, "NNsight", expected_files=expected),
+                module_file.resolve(),
+            )
+            module_file.write_bytes(b"changed source")
+            with self.assertRaisesRegex(RuntimeError, "digest"):
+                validate_imported_module(module, root, "NNsight", expected_files=expected)
+            module_file.write_bytes(b"pinned source")
+            (root / "extra.py").write_bytes(b"roster drift")
+            with self.assertRaisesRegex(RuntimeError, "roster"):
+                validate_imported_module(module, root, "NNsight", expected_files=expected)
+            (root / "extra.py").unlink()
+            with self.assertRaisesRegex(RuntimeError, "invalid path"):
+                validate_imported_module(
+                    module,
+                    root,
+                    "NNsight",
+                    expected_files={"../outside.py": expected["nnsight/__init__.py"]},
+                )
+            alias = root / "alias.py"
+            alias.symlink_to(module_file)
+            with self.assertRaisesRegex(RuntimeError, "symlink"):
+                validate_imported_module(module, root, "NNsight", expected_files={
+                    **expected,
+                    "alias.py": expected["nnsight/__init__.py"],
+                })
+
+    def test_nnsight_loader_rejects_source_roster_before_model_load(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_root = root / "source"
+            module_file = source_root / "nnsight" / "__init__.py"
+            module_file.parent.mkdir(parents=True)
+            module_file.write_bytes(b"pinned nnsight")
+            model_root = root / "model"
+            model_root.mkdir()
+            weights = model_root / "model.safetensors"
+            weights.write_bytes(b"weights")
+            source_files = {
+                "nnsight/__init__.py": hashlib.sha256(module_file.read_bytes()).hexdigest(),
+            }
+            fake_nnsight = SimpleNamespace(__file__=str(module_file))
+            fake_nnsight.LanguageModel = object()
+            model_load = Mock()
+            fake_transformers = SimpleNamespace(
+                AutoTokenizer=SimpleNamespace(from_pretrained=model_load),
+                AutoModelForCausalLM=SimpleNamespace(from_pretrained=model_load),
+            )
+            with patch(
+                "ahcl.adapters.common.importlib.import_module",
+                side_effect=lambda name: {
+                    "nnsight": fake_nnsight,
+                    "transformers": fake_transformers,
+                    "torch": SimpleNamespace(float32=object()),
+                }[name],
+            ):
+                module_file.write_bytes(b"roster drift")
+                with self.assertRaisesRegex(RuntimeError, "digest"):
+                    NNsightActivationAdapter.load(
+                        revision="locked",
+                        model_root=model_root,
+                        model_weights_sha256=hashlib.sha256(weights.read_bytes()).hexdigest(),
+                        source_root=source_root,
+                        source_files=source_files,
+                        enabled=True,
+                    )
+            model_load.assert_not_called()
+
+    def test_circuit_tracer_rejects_module_path_escape_before_model_load(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_root = root / "source"
+            source_root.mkdir()
+            in_tree = source_root / "replacement_model.py"
+            in_tree.write_bytes(b"manifest entry")
+            outside = root / "outside.py"
+            outside.write_bytes(b"outside source")
+            model_root = root / "model"
+            model_root.mkdir()
+            weights = model_root / "model.safetensors"
+            weights.write_bytes(b"weights")
+            transcoder_root = root / "transcoder"
+            transcoder_root.mkdir()
+            (transcoder_root / "config.yaml").write_text(
+                "model_kind: transcoder_set\ntranscoders: [layer.safetensors]\n",
+                encoding="utf-8",
+            )
+            (transcoder_root / "layer.safetensors").write_bytes(b"transcoder")
+            transcoder_files = {
+                name: hashlib.sha256((transcoder_root / name).read_bytes()).hexdigest()
+                for name in ("config.yaml", "layer.safetensors")
+            }
+            fake_replacement = SimpleNamespace(__file__=str(outside))
+            model_load = Mock()
+            fake_transformers = SimpleNamespace(
+                AutoTokenizer=SimpleNamespace(from_pretrained=model_load),
+                AutoModelForCausalLM=SimpleNamespace(from_pretrained=model_load),
+            )
+            with patch(
+                "ahcl.adapters.common.importlib.import_module",
+                side_effect=lambda name: {
+                    "circuit_tracer.replacement_model": fake_replacement,
+                    "yaml": SimpleNamespace(safe_load=lambda value: {"model_kind": "transcoder_set", "transcoders": ["layer.safetensors"]}),
+                    "torch": SimpleNamespace(float32=object()),
+                    "transformers": fake_transformers,
+                }[name],
+            ):
+                with self.assertRaisesRegex(RuntimeError, "outside"):
+                    CircuitTracerAdapter.from_pretrained(
+                        transcoder_set=str(transcoder_root),
+                        revision="locked",
+                        model_root=model_root,
+                        model_weights_sha256=hashlib.sha256(weights.read_bytes()).hexdigest(),
+                        source_root=source_root,
+                        source_files={
+                            "replacement_model.py": hashlib.sha256(in_tree.read_bytes()).hexdigest(),
+                        },
+                        transcoder_root=transcoder_root,
+                        transcoder_files=transcoder_files,
+                        enabled=True,
+                    )
+            model_load.assert_not_called()
+
+    def test_circuit_tracer_rejects_submodule_escape_before_model_load(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_root = root / "source"
+            source_root.mkdir()
+            replacement_file = source_root / "replacement_model.py"
+            replacement_file.write_bytes(b"manifest entry")
+            outside = root / "single_layer_transcoder.py"
+            outside.write_bytes(b"outside source")
+            model_root = root / "model"
+            model_root.mkdir()
+            weights = model_root / "model.safetensors"
+            weights.write_bytes(b"weights")
+            transcoder_root = root / "transcoder"
+            transcoder_root.mkdir()
+            (transcoder_root / "config.yaml").write_text(
+                "model_kind: transcoder_set\ntranscoders: [layer.safetensors]\n",
+                encoding="utf-8",
+            )
+            (transcoder_root / "layer.safetensors").write_bytes(b"transcoder")
+            transcoder_files = {
+                name: hashlib.sha256((transcoder_root / name).read_bytes()).hexdigest()
+                for name in ("config.yaml", "layer.safetensors")
+            }
+            fake_replacement = SimpleNamespace(__file__=str(replacement_file))
+            fake_submodule = SimpleNamespace(__file__=str(outside))
+            model_load = Mock()
+            fake_transformers = SimpleNamespace(
+                AutoTokenizer=SimpleNamespace(from_pretrained=model_load),
+                AutoModelForCausalLM=SimpleNamespace(from_pretrained=model_load),
+            )
+            with patch(
+                "ahcl.adapters.common.importlib.import_module",
+                side_effect=lambda name: {
+                    "circuit_tracer.replacement_model": fake_replacement,
+                    "circuit_tracer.transcoder.single_layer_transcoder": fake_submodule,
+                    "yaml": SimpleNamespace(safe_load=lambda value: {"model_kind": "transcoder_set", "transcoders": ["layer.safetensors"]}),
+                    "torch": SimpleNamespace(float32=object()),
+                    "transformers": fake_transformers,
+                }[name],
+            ):
+                with self.assertRaisesRegex(RuntimeError, "outside"):
+                    CircuitTracerAdapter.from_pretrained(
+                        transcoder_set=str(transcoder_root),
+                        revision="locked",
+                        model_root=model_root,
+                        model_weights_sha256=hashlib.sha256(weights.read_bytes()).hexdigest(),
+                        source_root=source_root,
+                        source_files={
+                            "replacement_model.py": hashlib.sha256(replacement_file.read_bytes()).hexdigest(),
+                        },
+                        transcoder_root=transcoder_root,
+                        transcoder_files=transcoder_files,
+                        enabled=True,
+                    )
+            model_load.assert_not_called()
+
     def test_local_custody_tree_has_an_exact_roster(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -224,6 +428,7 @@ class IntegratedPortTests(unittest.TestCase):
             attestation,
             state_slice="aligned-holistic-continual-learning-integrated-stack-v2",
             expected_python="3.11.11",
+            verify_bytes=False,
         )
         altered = dict(payload)
         altered["python"] = "3.14.5"
@@ -538,6 +743,51 @@ class IntegratedPortTests(unittest.TestCase):
                 reviewed_packet=packet,
                 operator_id="operator",
             )
+
+    def test_lane_attestation_is_unwrapped_only_after_lane_binding(self):
+        config = {
+            "state_slice": "aligned-holistic-continual-learning-integrated-stack-v2",
+            "execution": {"enabled": True},
+            "runtime": {"python": "3.11.11"},
+        }
+        packet = {"config": config}
+        receipt = ReviewReceipt(packet_digest(packet), "reviewer", "REJECT", "signature", public_key_id="key")
+        runtime = RuntimeAttestation.from_payload({
+            "schema": "ahcl.runtime.attestation.v1",
+            "state_slice": config["state_slice"],
+            "python": "3.11.11",
+            "interpreter": {
+                "path": str(Path(sys.executable).resolve()),
+                "sha256": hashlib.sha256(Path(sys.executable).resolve().read_bytes()).hexdigest(),
+            },
+            "distributions": {
+                "test": {
+                    "distribution": "test",
+                    "version": "1.0.0",
+                    "import_name": "test",
+                    "module_file": "test/__init__.py",
+                    "module_sha256": "c" * 64,
+                    "files": [{"path": "test/__init__.py", "sha256": "a" * 64}],
+                }
+            },
+        })
+        lane = RuntimeLaneAttestation.from_attestation(
+            lane="modern", state_slice=config["state_slice"], attestation=runtime
+        )
+        with patch("ahcl.execution.validate_runtime_lane_attestation") as validate_lane, patch(
+            "ahcl.execution.validate_runtime_attestation"
+        ):
+            with self.assertRaisesRegex(ReviewError, "not ACCEPT"):
+                require_execution_open(
+                    config,
+                    receipt,
+                    packet_digest=packet_digest(packet),
+                    reviewed_packet=packet,
+                    operator_id="operator",
+                    runtime_attestation=lane,
+                    runtime_lane="modern",
+                )
+        validate_lane.assert_called_once()
 
 
 if __name__ == "__main__":

@@ -8,11 +8,12 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 from ahcl.canonical import digest
 from ahcl.verified_review import TrustedReviewer, signed_message, verify_launch_receipt
 from ahcl.sealed_predictor import SealedLinearPredictor
 from ahcl.assessment_boundary import assess_once
-from ahcl.runtime_attestation import RuntimeAttestation
+from ahcl.runtime_attestation import RuntimeAttestation, RuntimeLaneAttestation
 
 
 class VerificationTests(unittest.TestCase):
@@ -91,9 +92,16 @@ class VerificationTests(unittest.TestCase):
                     }
                 },
             })
+            runtime_lane = RuntimeLaneAttestation.from_attestation(
+                lane='modern', state_slice='test', attestation=runtime_attestation
+            )
             kwargs = dict(packet=self.packet, config=self.packet['config'], receipt=self.receipt,
                           registry=self.registry, operator_id='operator', custody_root=root,
-                          predictor=predictor, evaluate=fail, runtime_attestation=runtime_attestation)
-            with self.assertRaises(RuntimeError): assess_once(**kwargs)
-            with self.assertRaises(ValueError): assess_once(**kwargs)
+                          predictor=predictor, evaluate=fail, runtime_attestation=runtime_lane,
+                          runtime_lane='modern')
+            with patch("ahcl.assessment_boundary.validate_runtime_lane_attestation") as validate_lane, \
+                    patch("ahcl.assessment_boundary.validate_runtime_attestation"):
+                with self.assertRaises(RuntimeError): assess_once(**kwargs)
+                with self.assertRaises(ValueError): assess_once(**kwargs)
+            validate_lane.assert_called()
             self.assertEqual(called,[predictor.identity])

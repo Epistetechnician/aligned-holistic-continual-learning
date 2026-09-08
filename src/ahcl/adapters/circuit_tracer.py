@@ -39,6 +39,7 @@ class CircuitTracerAdapter(FeatureInterventionBackend):
         model_root: str | Path | None = None,
         model_weights_sha256: str | None = None,
         source_root: str | Path | None = None,
+        source_files: Mapping[str, str] | None = None,
         transcoder_root: str | Path | None = None,
         transcoder_files: Mapping[str, str] | None = None,
         enabled: bool = False,
@@ -46,26 +47,24 @@ class CircuitTracerAdapter(FeatureInterventionBackend):
         require_enabled(enabled, "circuit-tracer model execution")
         if (
             not transcoder_set or not revision or model_root is None or not model_weights_sha256
-            or source_root is None or transcoder_root is None or transcoder_files is None
+            or source_root is None or source_files is None
+            or transcoder_root is None or transcoder_files is None
         ):
-            raise RuntimeError("exact local model and transcoder custody identities are required")
+            raise RuntimeError(
+                "exact local model, source, and transcoder custody identities are required"
+            )
         if Path(transcoder_set).expanduser().resolve() != Path(transcoder_root).expanduser().resolve():
             raise RuntimeError("transcoder_set must name the locked local transcoder root")
         module = optional_import("circuit_tracer.replacement_model", "circuit-tracer")
-        validate_imported_module(module, source_root, "circuit-tracer")
+        validate_imported_module(module, source_root, "circuit-tracer", expected_files=source_files)
+        yaml = optional_import("yaml", "PyYAML")
         torch = optional_import("torch", "PyTorch")
         transformers = optional_import("transformers", "Transformers")
         model_path = Path(model_root).expanduser().resolve()
         validate_local_custody_file(model_path / "model.safetensors", model_weights_sha256, "model weights")
         validate_local_custody_tree(transcoder_root, transcoder_files, "circuit-tracer transcoder")
-        tokenizer = transformers.AutoTokenizer.from_pretrained(
-            str(model_path), revision=revision, local_files_only=True
-        )
-        hf_model = transformers.AutoModelForCausalLM.from_pretrained(
-            str(model_path), revision=revision, local_files_only=True, torch_dtype=torch.float32
-        )
-        yaml = optional_import("yaml", "PyYAML")
-        config_path = Path(transcoder_root).expanduser().resolve() / "config.yaml"
+        local_root = Path(transcoder_root).expanduser().resolve()
+        config_path = local_root / "config.yaml"
         if "config.yaml" not in transcoder_files:
             raise RuntimeError("the locked transcoder roster must include config.yaml")
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
@@ -74,7 +73,6 @@ class CircuitTracerAdapter(FeatureInterventionBackend):
         model_kind = config.get("model_kind")
         if model_kind not in {"transcoder_set", "cross_layer_transcoder"}:
             raise RuntimeError("local circuit-tracer config has an unsupported model_kind")
-        local_root = Path(transcoder_root).expanduser().resolve()
         paths = config.get("transcoders")
         if not isinstance(paths, list) or not paths or any(not isinstance(path, str) for path in paths):
             raise RuntimeError("local circuit-tracer config must list transcoder files")
@@ -88,12 +86,29 @@ class CircuitTracerAdapter(FeatureInterventionBackend):
             if str(candidate.relative_to(local_root)) not in transcoder_files:
                 raise RuntimeError("every configured transcoder file must be in the locked roster")
             resolved_paths.append(str(candidate))
-        torch_device = torch.device(device)
-        scan_name = f"local:{local_root.name}@{revision}"
         if model_kind == "transcoder_set":
             transcoder_module = optional_import(
                 "circuit_tracer.transcoder.single_layer_transcoder", "circuit-tracer"
             )
+            validate_imported_module(
+                transcoder_module, source_root, "circuit-tracer", expected_files=source_files
+            )
+        else:
+            transcoder_module = optional_import(
+                "circuit_tracer.transcoder.cross_layer_transcoder", "circuit-tracer"
+            )
+            validate_imported_module(
+                transcoder_module, source_root, "circuit-tracer", expected_files=source_files
+            )
+        tokenizer = transformers.AutoTokenizer.from_pretrained(
+            str(model_path), revision=revision, local_files_only=True
+        )
+        hf_model = transformers.AutoModelForCausalLM.from_pretrained(
+            str(model_path), revision=revision, local_files_only=True, torch_dtype=torch.float32
+        )
+        torch_device = torch.device(device)
+        scan_name = f"local:{local_root.name}@{revision}"
+        if model_kind == "transcoder_set":
             special_load_fn = config.get("special_load_fn")
             if special_load_fn not in {None, "gemma-scope", "gemma-scope-2"}:
                 raise RuntimeError("local transcoder special_load_fn is unsupported")
@@ -111,9 +126,6 @@ class CircuitTracerAdapter(FeatureInterventionBackend):
                 lazy_decoder=False,
             )
         else:
-            transcoder_module = optional_import(
-                "circuit_tracer.transcoder.cross_layer_transcoder", "circuit-tracer"
-            )
             if config.get("format") == "gemma-scope-2":
                 transcoder_config = transcoder_module.load_gemma_scope_2_clt(
                     {index: path for index, path in enumerate(resolved_paths)},

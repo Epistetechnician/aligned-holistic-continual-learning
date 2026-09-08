@@ -94,6 +94,19 @@ class PowerDesign:
             return None
         return self._search(lambda n: self.joint_lower_bound(n) >= self.joint_target)
 
+    def required_families_per_cohort(self, *, families_per_document: int) -> int:
+        """Return the family count needed in each cohort for the joint target.
+
+        The conversion is document based: one independent document contributes
+        ``families_per_document`` repeated endpoint families. Repeats remain
+        metadata and never enter this conversion.
+        """
+
+        if self.joint_target is None:
+            raise ValueError("joint_target is required for a family-wise cohort size")
+        _positive_int(families_per_document, "families_per_document")
+        return self.joint_required_clusters * families_per_document
+
     def marginal_power(self, clusters: int) -> float:
         return two_sided_power(
             clusters=clusters, effect_size=self.effect_size, alpha=self.per_contrast_alpha,
