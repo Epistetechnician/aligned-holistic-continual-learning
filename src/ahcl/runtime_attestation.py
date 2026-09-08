@@ -78,8 +78,14 @@ def _regular_file_digest(path: Path, *, root: Path, label: str) -> tuple[str, st
 
 
 def _attest_requirement(requirement: RuntimeRequirement) -> dict[str, Any]:
+    if not isinstance(requirement, RuntimeRequirement):
+        raise RuntimeAttestationError("runtime requirement must be a RuntimeRequirement")
     if (
-        not requirement.distribution.strip()
+        not isinstance(requirement.distribution, str)
+        or not isinstance(requirement.import_name, str)
+        or not isinstance(requirement.version, str)
+        or not isinstance(requirement.source_root, Path)
+        or not requirement.distribution.strip()
         or not requirement.import_name.strip()
         or not _VERSION.fullmatch(requirement.version)
     ):
@@ -140,7 +146,12 @@ def attest_runtime(
 ) -> RuntimeAttestation:
     """Hash the current interpreter and every file in each required distribution."""
 
-    if not state_slice.strip() or not _VERSION.fullmatch(expected_python):
+    if (
+        not isinstance(state_slice, str)
+        or not isinstance(expected_python, str)
+        or not state_slice.strip()
+        or not _VERSION.fullmatch(expected_python)
+    ):
         raise RuntimeAttestationError("runtime attestation identity is malformed")
     if platform.python_version() != expected_python:
         raise RuntimeAttestationError(
@@ -174,9 +185,20 @@ def validate_runtime_attestation(
     payload = attestation.payload
     if set(payload) != {"schema", "state_slice", "python", "distributions"}:
         raise RuntimeAttestationError("runtime attestation schema mismatch")
-    if payload["schema"] != "ahcl.runtime.attestation.v1" or payload["state_slice"] != state_slice:
+    if (
+        not isinstance(state_slice, str)
+        or not isinstance(payload["schema"], str)
+        or not isinstance(payload["state_slice"], str)
+        or payload["schema"] != "ahcl.runtime.attestation.v1"
+        or payload["state_slice"] != state_slice
+    ):
         raise RuntimeAttestationError("runtime attestation state slice mismatch")
-    if payload["python"] != expected_python or not _VERSION.fullmatch(expected_python):
+    if (
+        not isinstance(expected_python, str)
+        or not isinstance(payload["python"], str)
+        or payload["python"] != expected_python
+        or not _VERSION.fullmatch(expected_python)
+    ):
         raise RuntimeAttestationError("runtime attestation Python identity mismatch")
     distributions = payload["distributions"]
     if not isinstance(distributions, dict) or not distributions:
