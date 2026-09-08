@@ -47,7 +47,7 @@
     "rust": "1.87.0",
     "torch": "2.6.0",
     "transformers": "5.9.0",
-    "circuit_tracer_torch": "2.4.0",
+    "circuit_tracer_torch": "2.6.0",
     "circuit_tracer_transformers": "4.57.3",
     "circuit_tracer_transformer_lens": "2.16.1",
     "circuit_tracer_nnsight_commit": "3fd13f8959cf9bcb79fc87d24bc244bceb26e3e5",
