@@ -6,7 +6,9 @@ Status: `PENDING_INDEPENDENT_REVIEW`
 
 Readiness packet: `configs/review-packet.v2.json`
 
-Readiness packet digest: `d00cdc3cea2267d3875def1a12786c9b89ff4353af2e44936cf2b4f8ffac6fd7`
+Readiness packet digest: `3c927dc32dcd025045356e0e4b68e4beeaf6c4a572bf5e03d3458496fa2057a7`
+
+Unsigned launch packet digest: `1b6d96428c492a345257123f1ac6b0119ea55974fe6eabc7f24fe0aa78767f2d`
 
 The readiness packet is immutable and keeps `execution.enabled: false`. A
 separate launch packet must be derived from it with the same public inputs,
