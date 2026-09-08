@@ -94,6 +94,15 @@ ACDC lane remains blocked on this macOS arm64 host because its locked Torch
 preflight also reports the current family-wise planning outcome as
 `NoCandidate`/`unvalidated` until the reviewed cohort redesign is adopted.
 
+The circuit-tracer replacement-model import also passes the exact 130-file
+manifest for submodule commit
+`6018ed8d35e40f2c50062822e8dde422b8e52e2d`. The NNsight 0.6.1 source manifest
+is complete at 170 files, but importing that immutable checkout requires its
+native `nnsight._c.py_mount` extension to be built; the current checkout does
+not contain that build artifact. The installed NNsight wheel is not accepted
+as a substitute for the pinned source checkout, so NNsight local-byte
+qualification remains open.
+
 Before qualification: finish integration through one mandatory launch path;
 freeze checkout and installed runtime bytes; bind model, asset, tokenizer and
 fresh family roster; fix independent unit, contrasts, effect assumptions and
