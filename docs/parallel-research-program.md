@@ -10,6 +10,7 @@ proposal for scientific review, not execution authorization or empirical evidenc
 - [x] Establish current baseline: 27 Python tests pass before this work.
 - [x] Assign measurement, baseline, and independent technical audit ownership.
 - [x] Implement model-free feature, horizon, alternative-input, and repair measurements.
+- [x] Implement model-free checkpoint lineage and mechanistic-continuity measurements.
 - [x] Integrate measurement fixes and resource-budget contract after focused tests.
 - [x] Record independent rejection findings and remaining execution prerequisites.
 - [x] Run combined Python/Rust checks; preserve concurrent commits and stage only owned fixes.
@@ -90,10 +91,20 @@ budgeted candidate-probe effects, but never assessment labels or future outcomes
    Test on disjoint repair-assessment families; selection of damage or targets
    cannot use their outcomes. Stop if no real damage exists or repair trades away
    the new learning beyond the fixed bound.
+8. **Checkpoint identity continuity.** Supply fixed checkpoint identities, stable
+   representation and intervention vectors, behavior summaries, and explicit
+   circuit lineage edges. The continuity report separately scores representation,
+   circuit, intervention, and behavioral continuity. Splits and disappearances are
+   represented by partial or absent edges; the calculator never rematches IDs. A
+   behaviorally stable transition with low circuit continuity is reported as
+   mechanistic drift, not as preserved alignment. Thresholds are locked before
+   assessment, and the report remains aggregate caller-owned measurement evidence.
 
 `src/ahcl/research_tracks.py` implements diagnostic calculations for streams 3–5
-and 7. Its tests use hand-computable fixtures. They do not establish semantic
-feature stability, long-horizon performance, or causal repair efficacy.
+and 7. `src/ahcl/continuity.py` implements stream 8's fixed-ID lineage and
+continuity report. Its tests use hand-computable fixtures. They do not establish
+semantic feature stability, long-horizon performance, causal repair efficacy,
+mechanistic understanding, or alignment.
 
 ## Ordering and review boundary
 

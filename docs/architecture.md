@@ -17,6 +17,7 @@ flowchart LR
   A --> V[Independent contract validator]
   V --> K[Rust admission kernel]
   K -->|review only| D[Quarantine or admission decision]
+  M -. checkpoint measurements .-> C[Explicit circuit lineage and continuity report]
 ```
 
 The integrated model-backed slice has those identities in the external custody
@@ -31,3 +32,11 @@ upstream projects are available as immutable submodules, while every runtime
 adapter remains disabled until the integrated review gate passes. This keeps a
 convenient backend import from silently turning a synthetic qualification into
 model evidence.
+
+`src/ahcl/continuity.py` provides the model-free Theseus-style measurement
+boundary. It accepts only aggregate checkpoint measurements and explicit
+caller-supplied lineage edges. It reports representation, circuit,
+intervention, and behavioral continuity independently; it can identify the
+bounded pattern of behavioral equivalence with mechanistic drift, but it does
+not establish mechanistic understanding, alignment, continual-learning
+superiority, or production readiness.
