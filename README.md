@@ -52,7 +52,7 @@ Run the read-only integrated preflight against the external custody root:
 
 ```sh
 PYTHONPATH=src python3 -m ahcl.integrated_preflight \
-  --custody-root /Users/shaanp/.codex/custody/ahcl-integrated-stack-v2
+  --custody-root /path/to/owner-only/custody/ahcl-integrated-stack-v2
 ```
 
 It reports `READY_FOR_INDEPENDENT_REVIEW` while leaving model execution
@@ -71,3 +71,9 @@ attestation implementation covers the pinned interpreter, distribution, and
 imported module bytes. Modern and circuit-tracer lane attestations are retained
 outside Git; the ACDC lane remains blocked because Torch 1.13.1 has no matching
 macOS arm64 wheel for Python 3.11.11. No model-backed result is reported.
+
+## Research report and project policy
+
+See [RESEARCH.md](RESEARCH.md) for findings, [SECURITY.md](SECURITY.md) to report
+issues, and [CONTRIBUTING.md](CONTRIBUTING.md). Licensed under
+[Apache-2.0](LICENSE). Submodules under `third_party/` keep their own licenses.

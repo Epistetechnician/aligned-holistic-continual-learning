@@ -28,3 +28,14 @@ production readiness beyond its recorded evidence ceiling.
 
 Measure twice, cut once. Keep the codebase clean: no temporary files, dead
 code, dead files, or untracked generated artifacts.
+
+## Public release readiness
+
+Explicit public-release readiness is authorized under named state slice
+`public-release-readiness-v1`: additive `LICENSE`, `NOTICE`, `SECURITY.md`,
+`CONTRIBUTING.md`, `RESEARCH.md`, README navigation, replacement of one
+machine-specific path with a placeholder in documentation, and a CI workflow
+that runs the existing hermetic tests. It changes no source behavior,
+thresholds, protocols, results, or claim ceilings and authorizes no model
+execution or claim escalation. Every mutation in this phase names state slice
+`public-release-readiness-v1`.

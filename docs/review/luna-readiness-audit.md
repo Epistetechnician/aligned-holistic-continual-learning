@@ -45,7 +45,7 @@ independent external authorization.
   (`src/ahcl/execution.py:18-39`). The review record remains
   `PENDING_INDEPENDENT_REVIEW` (`docs/review/integrated-stack-v2-review.md:5-35`).
 - `AHCL_CUSTODY_ROOT` is unset in the audited shell, but the known external
-  fallback `/Users/shaanp/.codex/custody/ahcl-integrated-stack-v2` exists with
+  fallback `<owner-only custody root>/ahcl-integrated-stack-v2` exists with
   mode `0700`. Its `manifest.json` exists with mode `0600`, declares the correct
   state slice, manifest digest
   `059babda7993b9cb2625e1acba8c836ff1e2d8539eef9ebac1f10b29e9ba27a1`, and 29
