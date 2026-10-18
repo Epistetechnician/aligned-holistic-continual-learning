@@ -1,12 +1,28 @@
 <!-- readme-v2:begin -->
 # Aligned Holistic Continual Learning
 
-[![CI](https://github.com/Epistetechnician/aligned-holistic-continual-learning/actions/workflows/ci.yml/badge.svg)](https://github.com/Epistetechnician/aligned-holistic-continual-learning/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE) ![visibility: private staging](https://img.shields.io/badge/release-private%20staging-lightgrey) ![claims: bounded](https://img.shields.io/badge/claims-bounded%20local-orange)
+[![CI](https://github.com/Epistetechnician/aligned-holistic-continual-learning/actions/workflows/ci.yml/badge.svg)](https://github.com/Epistetechnician/aligned-holistic-continual-learning/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE) ![claims: bounded](https://img.shields.io/badge/claims-bounded%20local-orange)
 
 > This clean-room monorepo tests a narrow, falsifiable question: can a fixed causal feature monitor predict several behavior-relevant consequences of a continual-learning update while retaining a locked base model? The first implementation is a deterministic synthetic qualification. It exercises the full research lifecycle without downloading a model or retaining raw traces.
 
+## Start here
+
+**Question.** Can a fixed causal-feature monitor predict what a continual-learning update will do to competence, calibration and policy compliance, before the update ships?
+
+**Headline result.** A deterministic synthetic qualification passes every primary and control gate (assessment R² 0.830-0.900, sign agreement 0.938-0.979, shuffled-label controls negative). A separate matched-progress comparison, which asks whether lower harm is only a side effect of learning less, **failed**: see [RESEARCH.md](RESEARCH.md).
+
+**What it does not show.** Nothing model-backed. No model was run, so this qualifies the harness, not the hypothesis. The model-backed experiment is designed and held closed pending independent review of its power analysis.
+
+**Reproduce.** No GPU, no downloads:
+
+```sh
+PYTHONPATH=src python3 -m ahcl.run --output results/synthetic-result.json
+PYTHONPATH=src python3 -m ahcl.validate results/synthetic-result.json
+```
+
 ## Contents
 
+- [Start here](#start-here)
 - [At a glance](#at-a-glance)
 - [Key findings](#key-findings)
 - [Verification and CI/CD acceptance](#verification-and-cicd-acceptance)
@@ -20,7 +36,7 @@
 | | |
 |---|---|
 | Stack | Python 3.12 + Rust workspace |
-| Release stage | Private staging for research release; not yet public |
+| Release stage | Public research release |
 | License | Apache-2.0 (see [LICENSE](LICENSE), [NOTICE](NOTICE)) |
 | Research report | [RESEARCH.md](RESEARCH.md) |
 | Last full acceptance run | 2026-10-14 |
