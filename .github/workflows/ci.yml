@@ -7,8 +7,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - run: python3 -m pip install cryptography
       - run: PYTHONPATH=src python3 -m unittest discover -s tests
       - run: cargo test --workspace
