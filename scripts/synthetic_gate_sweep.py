@@ -168,20 +168,27 @@ def _min_margin_per_gate(assessment_metrics, shuffled):
 
 
 def _sweep_seeds(seeds, noise_scale, family_count):
+    details = _sweep_seeds_detailed(seeds, noise_scale, family_count)
+    return details[:3]
+
+
+def _sweep_seeds_detailed(seeds, noise_scale, family_count):
     passes = 0
     weakest = None
     gate_minima = {gate: math.inf for gate in GATE_NAMES}
+    gate_failures = {gate: 0 for gate in GATE_NAMES}
     for seed in seeds:
         assessment_metrics, shuffled, _ = _run(seed, noise_scale, family_count)
         margins = _min_margin_per_gate(assessment_metrics, shuffled)
         passes += int(min(margins.values()) >= 0.0)
         for gate, margin in margins.items():
             gate_minima[gate] = min(gate_minima[gate], margin)
+            gate_failures[gate] += int(margin < 0.0)
         seed_min = min(margins.values())
         if weakest is None or seed_min < weakest[0]:
             weakest = (seed_min, seed)
     binding_gate = min(gate_minima, key=gate_minima.get)
-    return passes, weakest, binding_gate
+    return passes, weakest, binding_gate, gate_failures
 
 
 COMPARISON_ARMS = ("untouched_base", "fixed_update", "retention_guard", "sham_update")
@@ -249,13 +256,17 @@ def main() -> int:
     noise_results = []
     # Reduced noise range to avoid timeouts
     for noise_scale in (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0):
-        passes, weakest, binding = _sweep_seeds(noise_seeds, noise_scale, full_roster)
+        passes, weakest, binding, gate_failures = _sweep_seeds_detailed(
+            noise_seeds, noise_scale, full_roster
+        )
         noise_results.append(
             {
                 "noise_scale": noise_scale,
                 "runs": len(noise_seeds),
                 "gate_pass_rate": round(passes / len(noise_seeds), 4),
                 "weakest_margin": round(weakest[0], 6),
+                "first_failing_gate": binding,
+                "gate_failure_counts": gate_failures,
             }
         )
     print(json.dumps({"section": "noise-sweep", "results": noise_results}))

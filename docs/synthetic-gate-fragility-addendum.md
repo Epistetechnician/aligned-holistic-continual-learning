@@ -11,6 +11,28 @@ Observed (32 seed-relabelled runs at 16 families):
 
 Reading: the locked synthetic gates pass for the recorded configuration but are sensitive to roster size and seed labelling, not noise. Any claim built on the synthetic pass should carry the roster-size dependence. No threshold was or should be changed on this basis.
 
+## Which gate fails first as noise rises
+
+The sweep now reports gate failure counts and `first_failing_gate` for each
+noise level. The latter is the gate with the smallest minimum margin across the
+16 seed-relabelled runs, so it identifies the first binding gate rather than
+claiming that noise caused a failure. The recorded run produced this summary:
+
+| noise scale | gate pass rate | first failing gate | R2 failures | R2 over baseline failures | sign failures | shuffled-control failures |
+|---:|---:|---|---:|---:|---:|---:|
+| 0.0 | 0.500 | sign_agreement | 0 | 0 | 7 | 1 |
+| 0.5 | 0.562 | sign_agreement | 0 | 0 | 6 | 1 |
+| 1.0 | 0.562 | sign_agreement | 0 | 0 | 6 | 1 |
+| 2.0 | 0.500 | sign_agreement | 0 | 0 | 7 | 1 |
+| 3.0 | 0.500 | sign_agreement | 0 | 0 | 7 | 1 |
+| 5.0 | 0.562 | sign_agreement | 0 | 0 | 6 | 1 |
+
+These selected rows show no monotonic noise-driven gate transition in this
+probe: `sign_agreement` remains the binding gate, while the pass rate varies
+within the observed range. The complete per-noise JSON output remains the
+reproducibility record; this table is a documented summary, not a new result
+or a threshold recommendation.
+
 ## Joint pass probability versus roster size (extended probe)
 
 `python3 scripts/synthetic_joint_power.py 48` (48 re-seeded runs per roster size, noise scale 1.0, locked thresholds from `ahcl.experiment.CONFIG`). "Joint" means every gate on every axis passes in the same run. Same caveat as above: the probe reimplements the stream generator.
